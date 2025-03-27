@@ -1,4 +1,4 @@
-.PHONY: build run test
+.PHONY: build run test bench
 
 default: build
 
@@ -13,3 +13,7 @@ run: build
 test:
 	@printf "Starting tests...\n"
 	@./scripts/test.sh
+
+bench:
+	@printf "Starting benchmark...\n"
+	@./scripts/bench.sh
