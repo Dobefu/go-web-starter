@@ -1,4 +1,4 @@
-.PHONY: build run
+.PHONY: build run test
 
 default: build
 
@@ -9,3 +9,7 @@ build:
 run: build
 	@printf "Running the binary...\n"
 	@./app
+
+test:
+	@printf "Starting tests...\n"
+	@./scripts/test.sh
