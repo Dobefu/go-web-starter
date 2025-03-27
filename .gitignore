@@ -1,2 +1,5 @@
 # The built application.
 app
+
+# Test coverage files.
+coverage.*
