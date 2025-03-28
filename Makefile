@@ -1,4 +1,4 @@
-.PHONY: build run test bench
+.PHONY: build run dev test bench
 
 default: build
 
@@ -9,6 +9,9 @@ build:
 run: build
 	@printf "Running the binary...\n"
 	@./app
+
+dev:
+	@air
 
 test:
 	@printf "Starting tests...\n"
