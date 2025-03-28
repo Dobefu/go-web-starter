@@ -6,6 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(t *testing.T) {
+func TestMainSuccess(t *testing.T) {
 	assert.NotPanics(t, main)
 }
