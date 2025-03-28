@@ -3,3 +3,6 @@ app
 
 # Test coverage files.
 coverage.*
+
+# Temporary files.
+tmp/
