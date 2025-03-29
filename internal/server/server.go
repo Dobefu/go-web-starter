@@ -20,6 +20,8 @@ type Server struct {
 	port   int
 }
 
+// routerWrapper combines the Router interface with Gin's IRouter to maintain
+// a clean abstraction whilst providing access to Gin's routing capabilities.
 type routerWrapper struct {
 	Router
 	gin.IRouter
@@ -50,6 +52,8 @@ func New(port int) ServerInterface {
 	return DefaultNew(port)
 }
 
+// The registerRoutes function uses a type assertion to access Gin's routing capabilities.
+// This is safe because routerWrapper implements gin.IRouter.
 func (srv *Server) registerRoutes() {
 	routes.Register(srv.router.(gin.IRouter))
 }
