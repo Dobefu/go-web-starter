@@ -3,9 +3,9 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
-  bin = "./app server --port 40000"
-  cmd = "go build -ldflags="-s -w" -o app"
+  args_bin = ["server", "--port", "40000"]
+  bin = "./app"
+  cmd = "go build -ldflags=\"-s -w\" -o app"
   delay = 100
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
