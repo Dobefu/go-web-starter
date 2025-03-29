@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	"github.com/gin-gonic/gin"
 )
@@ -35,6 +36,7 @@ var DefaultNew NewServerFunc = func(port int) ServerInterface {
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(middleware.SecurityHeaders())
 
 	srv := &Server{
 		router: &routerWrapper{
