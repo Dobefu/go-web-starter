@@ -1,4 +1,4 @@
-.PHONY: build run dev test bench
+.PHONY: build run dev test bench clean
 
 default: build
 
@@ -20,3 +20,11 @@ test:
 bench:
 	@printf "Starting benchmark...\n"
 	@./scripts/bench.sh
+
+clean:
+	@printf "Cleaning cache and build artifacts...\n"
+	@rm -f app
+	@rm -f coverage.out
+	@rm -rf tmp/
+	@go clean -testcache
+	@go clean -modcache
