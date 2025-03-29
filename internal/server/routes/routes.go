@@ -5,7 +5,7 @@ import (
 )
 
 func Register(router gin.IRouter) {
-	router.GET("/health", healthCheck)
+	router.GET("/health", HealthCheck)
 }
 
 func healthCheck(c *gin.Context) {
