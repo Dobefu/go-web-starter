@@ -23,7 +23,7 @@ A modern, production-ready Go web application starter template with best practic
 ## Prerequisites
 
 - Go 1.24 or higher
-- Air, (optional, for live reloading)
+- Air (optional, for live reloading)
 - Make (optional, for using Makefile commands)
 - Docker (optional, for containerization)
 
