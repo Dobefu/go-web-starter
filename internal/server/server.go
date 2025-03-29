@@ -6,8 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Router interface {
+	Run(addr ...string) error
+	Use(middleware ...gin.HandlerFunc) gin.IRoutes
+}
+
 type Server struct {
-	router *gin.Engine
+	router Router
 	port   int
 }
 
@@ -24,8 +29,8 @@ func New(port int) *Server {
 	}
 }
 
-func (s *Server) Start() error {
-	addr := fmt.Sprintf(":%d", s.port)
+func (srv *Server) Start() error {
+	addr := fmt.Sprintf(":%d", srv.port)
 
-	return s.router.Run(addr)
+	return srv.router.Run(addr)
 }
