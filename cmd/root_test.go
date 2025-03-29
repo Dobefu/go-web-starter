@@ -10,17 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTestConfig(t *testing.T) (*os.File, func()) {
+func setupRootCmdTest(t *testing.T) (*os.File, func()) {
 	tmpFile, err := os.CreateTemp("", "test_config_*.toml")
 	assert.NoError(t, err)
-	return tmpFile, func() { os.Remove(tmpFile.Name()) }
+	return tmpFile, func() { _ = os.Remove(tmpFile.Name()) }
 }
 
 func TestInitConfigSuccess(t *testing.T) {
 	originalCfgFile := cfgFile
 	defer func() { cfgFile = originalCfgFile }()
 
-	tmpFile, cleanup := setupTestConfig(t)
+	tmpFile, cleanup := setupRootCmdTest(t)
 	defer cleanup()
 
 	err := os.WriteFile(tmpFile.Name(), []byte("test = true"), 0644)
@@ -32,7 +32,7 @@ func TestInitConfigSuccess(t *testing.T) {
 	assert.Equal(t, tmpFile.Name(), viper.ConfigFileUsed())
 }
 
-func TestExecuteSuccess(t *testing.T) {
+func TestRootExecuteSuccess(t *testing.T) {
 	originalRootCmd := rootCmd
 	defer func() { rootCmd = originalRootCmd }()
 
@@ -66,7 +66,7 @@ func TestInitConfigCustomFile(t *testing.T) {
 	originalCfgFile := cfgFile
 	defer func() { cfgFile = originalCfgFile }()
 
-	tmpFile, cleanup := setupTestConfig(t)
+	tmpFile, cleanup := setupRootCmdTest(t)
 	defer cleanup()
 
 	cfgFile = tmpFile.Name()
@@ -75,7 +75,7 @@ func TestInitConfigCustomFile(t *testing.T) {
 	assert.Equal(t, tmpFile.Name(), viper.ConfigFileUsed())
 }
 
-func TestExecErrFlag(t *testing.T) {
+func TestExecuteErrFlag(t *testing.T) {
 	cmd := exec.Command(os.Args[0], "bogus")
 	cmd.Env = append(os.Environ(), "GO_TEST_EXIT=1")
 	err := cmd.Run()
@@ -89,11 +89,12 @@ func TestConfigFlag(t *testing.T) {
 	originalCfgFile := cfgFile
 	defer func() { cfgFile = originalCfgFile }()
 
-	tmpFile, cleanup := setupTestConfig(t)
+	tmpFile, cleanup := setupRootCmdTest(t)
 	defer cleanup()
 
 	rootCmd.SetArgs([]string{"--config", tmpFile.Name()})
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	assert.NoError(t, err)
 
 	assert.Equal(t, tmpFile.Name(), cfgFile)
 }

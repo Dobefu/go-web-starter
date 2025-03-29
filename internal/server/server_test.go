@@ -24,7 +24,7 @@ func (m *MockRouter) Use(middleware ...gin.HandlerFunc) gin.IRoutes {
 	return args.Get(0).(gin.IRoutes)
 }
 
-func TestNew(t *testing.T) {
+func TestNewSuccess(t *testing.T) {
 	t.Parallel()
 
 	port := 8080
@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 	assert.Greater(t, len(handlers), 0)
 }
 
-func TestStart(t *testing.T) {
+func TestStartSuccess(t *testing.T) {
 	t.Parallel()
 
 	port := 8080
