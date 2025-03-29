@@ -11,6 +11,10 @@ type Router interface {
 	Use(middleware ...gin.HandlerFunc) gin.IRoutes
 }
 
+type ServerInterface interface {
+	Start() error
+}
+
 type Server struct {
 	router Router
 	port   int
