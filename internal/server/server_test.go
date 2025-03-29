@@ -28,7 +28,6 @@ func TestNewSuccess(t *testing.T) {
 	assert.NotNil(t, srv.router)
 	assert.Equal(t, port, srv.port)
 
-	// Get the underlying gin.Engine from the routerWrapper
 	router := srv.router.(*routerWrapper).IRouter.(*gin.Engine)
 	handlers := router.Handlers
 	assert.Greater(t, len(handlers), 0)
