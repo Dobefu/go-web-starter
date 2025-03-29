@@ -7,5 +7,7 @@ import (
 )
 
 func TestMainSuccess(t *testing.T) {
+	t.Parallel()
+
 	assert.NotPanics(t, main)
 }
