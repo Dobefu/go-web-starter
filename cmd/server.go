@@ -20,9 +20,17 @@ func init() {
 }
 
 func ServerCmd(cmd *cobra.Command, args []string) {
-	port, _ := cmd.Flags().GetInt("port")
+	port, err := cmd.Flags().GetInt("port")
+
+	if err != nil {
+		fmt.Printf("Failed to get port: %v\n", err)
+		return
+	}
+
 	srv := server.New(port)
-	if err := runServer(srv, port); err != nil {
+	err = runServer(srv, port)
+
+	if err != nil {
 		fmt.Printf("Failed to start server: %v\n", err)
 	}
 }

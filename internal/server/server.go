@@ -25,7 +25,9 @@ type routerWrapper struct {
 	gin.IRouter
 }
 
-func New(port int) *Server {
+type NewServerFunc func(port int) ServerInterface
+
+var DefaultNew NewServerFunc = func(port int) ServerInterface {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -42,6 +44,10 @@ func New(port int) *Server {
 
 	srv.registerRoutes()
 	return srv
+}
+
+func New(port int) ServerInterface {
+	return DefaultNew(port)
 }
 
 func (srv *Server) registerRoutes() {
