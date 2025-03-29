@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,7 +21,7 @@ func (m *MockRouter) Run(addr ...string) error {
 
 func TestNewSuccess(t *testing.T) {
 	port := 8080
-	srv := New(port)
+	srv := NewTestServer(port)
 
 	assert.NotNil(t, srv)
 }
@@ -28,6 +29,29 @@ func TestNewSuccess(t *testing.T) {
 func TestDefaultNew(t *testing.T) {
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
+
+	originalDefaultNew := DefaultNew
+	DefaultNew = func(port int) ServerInterface {
+		gin.SetMode(gin.ReleaseMode)
+		router := gin.Default()
+
+		router.Use(gin.Logger())
+		router.Use(gin.Recovery())
+		router.Use(middleware.SecurityHeaders())
+
+		srv := &Server{
+			router: &routerWrapper{
+				Router:  router,
+				IRouter: router,
+			},
+			port: port,
+		}
+
+		srv.registerRoutes()
+		return srv
+	}
+
+	defer func() { DefaultNew = originalDefaultNew }()
 
 	port := 8080
 	srv := DefaultNew(port).(*Server)

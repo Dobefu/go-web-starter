@@ -6,13 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HomeData struct {
+type IndexData struct {
 	Title   string
 	Content string
 }
 
 func Index(c *gin.Context) {
-	data := HomeData{
+	data := IndexData{
 		Title: "INDEX",
 	}
 

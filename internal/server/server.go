@@ -52,6 +52,25 @@ var DefaultNew NewServerFunc = func(port int) ServerInterface {
 	return srv
 }
 
+func NewTestServer(port int) ServerInterface {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	router.Use(gin.Recovery())
+	router.Use(middleware.SecurityHeaders())
+
+	srv := &Server{
+		router: &routerWrapper{
+			Router:  router,
+			IRouter: router,
+		},
+		port: port,
+	}
+
+	srv.registerRoutes()
+	return srv
+}
+
 func New(port int) ServerInterface {
 	return DefaultNew(port)
 }
