@@ -3,12 +3,13 @@ package server
 import (
 	"fmt"
 
+	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	"github.com/gin-gonic/gin"
 )
 
 type Router interface {
+	gin.IRouter
 	Run(addr ...string) error
-	Use(middleware ...gin.HandlerFunc) gin.IRoutes
 }
 
 type ServerInterface interface {
@@ -27,10 +28,17 @@ func New(port int) *Server {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	return &Server{
+	srv := &Server{
 		router: router,
 		port:   port,
 	}
+
+	srv.registerRoutes()
+	return srv
+}
+
+func (srv *Server) registerRoutes() {
+	routes.Register(srv.router)
 }
 
 func (srv *Server) Start() error {
