@@ -5,5 +5,6 @@ import (
 )
 
 func Register(router gin.IRouter) {
+	router.GET("/", Index)
 	router.GET("/health", HealthCheck)
 }

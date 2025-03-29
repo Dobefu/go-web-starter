@@ -34,6 +34,8 @@ var DefaultNew NewServerFunc = func(port int) ServerInterface {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
+	router.LoadHTMLGlob("templates/*")
+
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.SecurityHeaders())
