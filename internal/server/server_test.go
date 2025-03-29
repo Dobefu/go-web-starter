@@ -11,17 +11,11 @@ import (
 
 type MockRouter struct {
 	mock.Mock
-	Handlers []gin.HandlerFunc
 }
 
 func (m *MockRouter) Run(addr ...string) error {
 	args := m.Called(addr)
 	return args.Error(0)
-}
-
-func (m *MockRouter) Use(middleware ...gin.HandlerFunc) gin.IRoutes {
-	args := m.Called(middleware)
-	return args.Get(0).(gin.IRoutes)
 }
 
 func TestNewSuccess(t *testing.T) {
@@ -34,7 +28,9 @@ func TestNewSuccess(t *testing.T) {
 	assert.NotNil(t, srv.router)
 	assert.Equal(t, port, srv.port)
 
-	handlers := srv.router.(*gin.Engine).Handlers
+	// Get the underlying gin.Engine from the routerWrapper
+	router := srv.router.(*routerWrapper).IRouter.(*gin.Engine)
+	handlers := router.Handlers
 	assert.Greater(t, len(handlers), 0)
 }
 

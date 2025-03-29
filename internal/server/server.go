@@ -8,7 +8,6 @@ import (
 )
 
 type Router interface {
-	gin.IRouter
 	Run(addr ...string) error
 }
 
@@ -21,6 +20,11 @@ type Server struct {
 	port   int
 }
 
+type routerWrapper struct {
+	Router
+	gin.IRouter
+}
+
 func New(port int) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -29,8 +33,11 @@ func New(port int) *Server {
 	router.Use(gin.Recovery())
 
 	srv := &Server{
-		router: router,
-		port:   port,
+		router: &routerWrapper{
+			Router:  router,
+			IRouter: router,
+		},
+		port: port,
 	}
 
 	srv.registerRoutes()
@@ -38,7 +45,7 @@ func New(port int) *Server {
 }
 
 func (srv *Server) registerRoutes() {
-	routes.Register(srv.router)
+	routes.Register(srv.router.(gin.IRouter))
 }
 
 func (srv *Server) Start() error {
