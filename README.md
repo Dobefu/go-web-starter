@@ -5,7 +5,7 @@
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Dobefu_go-web-starter&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Dobefu_go-web-starter)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Dobefu/go-web-starter)](https://goreportcard.com/report/github.com/Dobefu/go-web-starter)
 
-> [!WARNING]  
+> [!WARNING]
 > This repository is still a work-in-progress
 
 A modern, production-ready Go web application starter template with best practices and common features pre-configured.
@@ -39,6 +39,7 @@ A modern, production-ready Go web application starter template with best practic
    ```
 
 2. Install dependencies:
+
    ```bash
    go mod download
    ```
@@ -58,6 +59,7 @@ A modern, production-ready Go web application starter template with best practic
    ```
 
 2. The server will start on port 4000 by default. You can change the port using the `-p` flag:
+
    ```bash
    go run main.go server -p 8080
    ```
