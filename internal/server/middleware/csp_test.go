@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSecurityHeaders(t *testing.T) {
+func TestCspHeaders(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(SecurityHeaders())
+	router.Use(CspHeaders())
 
 	router.GET("/", func(c *gin.Context) {
 		c.Status(http.StatusOK)

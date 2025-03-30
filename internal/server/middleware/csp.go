@@ -84,7 +84,7 @@ func (config SecurityConfig) SetHeaders(c *gin.Context) {
 	c.Header("Content-Security-Policy", config.CSP.String())
 }
 
-func SecurityHeaders() gin.HandlerFunc {
+func CspHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		newDefaultConfig().SetHeaders(c)
 		c.Next()
