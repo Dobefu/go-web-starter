@@ -1,4 +1,4 @@
-.PHONY: build run dev test bench clean
+.PHONY: build run dev test lint bench clean
 
 default: build
 
@@ -17,6 +17,10 @@ dev:
 test:
 	@printf "Starting tests...\n"
 	@./scripts/test.sh
+
+lint:
+	@printf "Linting files...\n"
+	@pnpm lint
 
 bench:
 	@printf "Starting benchmark...\n"
