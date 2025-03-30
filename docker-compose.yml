@@ -1,0 +1,19 @@
+name: cms
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: db
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - '2345:5432'
+
+volumes:
+  postgres:
