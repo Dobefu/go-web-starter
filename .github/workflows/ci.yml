@@ -31,13 +31,13 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: './pnpm-lock.yaml'
 
-      - name: Install dependencies
+      - name: Install Go dependencies
         run: go get .
 
-      - name: Install dependencies
+      - name: Install NodeJS dependencies
         run: pnpm install
 
-      - name: Build
+      - name: Build the application
         run: make build
 
   lint:
@@ -55,10 +55,10 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: './pnpm-lock.yaml'
 
-      - name: Install dependencies
+      - name: Install NodeJS dependencies
         run: pnpm install
 
-      - name: Install dependencies
+      - name: Run the linter
         run: pnpm lint
 
   test:
