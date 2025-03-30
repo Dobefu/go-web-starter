@@ -39,7 +39,7 @@ func defaultNew(port int) ServerInterface {
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(middleware.CORS())
+	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 
 	srv := &Server{
@@ -61,7 +61,7 @@ func NewTestServer(port int) ServerInterface {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.CORS())
+	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 
 	srv := &Server{
