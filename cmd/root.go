@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -34,6 +36,24 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv()
+
+	if cfgFile == "" {
+		if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
+			viper.Set("server.port", config.DefaultConfig.Server.Port)
+			viper.Set("server.host", config.DefaultConfig.Server.Host)
+
+			dir := filepath.Dir("config.toml")
+
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				panic(err)
+			}
+
+			if err := viper.WriteConfigAs("config.toml"); err != nil {
+				panic(err)
+			}
+		}
+	}
+
 	_ = viper.ReadInConfig()
 }
 
