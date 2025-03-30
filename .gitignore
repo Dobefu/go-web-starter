@@ -6,3 +6,6 @@ coverage.*
 
 # Temporary files.
 tmp/
+
+# NodeJS packages.
+node_modules/
