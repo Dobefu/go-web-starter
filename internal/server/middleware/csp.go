@@ -34,11 +34,23 @@ func NewCSPConfig() CSPConfig {
 			},
 			"connect-src": {
 				"self",
-				"wss:",
+			},
+			"font-src": {
+				"self",
+			},
+			"object-src": {
+				"none",
+			},
+			"base-uri": {
+				"self",
+			},
+			"form-action": {
+				"self",
 			},
 			"frame-ancestors": {
 				"none",
 			},
+			"upgrade-insecure-requests": {},
 		},
 	}
 }
