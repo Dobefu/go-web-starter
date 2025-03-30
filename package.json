@@ -5,17 +5,20 @@
   "scripts": {
     "build:css": "pnpm dlx @tailwindcss/cli -i ./static/css/src/main.css -o ./static/css/dist/main.css",
     "watch:css": "pnpm dlx @tailwindcss/cli -i ./static/css/src/main.css -o ./static/css/dist/main.css --watch",
-    "lint": "prettier . --check",
-    "lint:fix": "prettier . --write"
+    "lint": "eslint . && prettier . --check",
+    "lint:fix": "eslint . && prettier . --write"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.1.0+sha512.c89847b0667ddab50396bbbd008a2a43cf3b581efd59cf5d9aa8923ea1fb4b8106c041d540d08acb095037594d73ebc51e1ec89ee40c88b30b8a66c0fae0ac1b",
   "devDependencies": {
+    "@eslint/js": "^9.23.0",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "autoprefixer": "^10.4.21",
+    "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.1",
+    "globals": "^16.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
