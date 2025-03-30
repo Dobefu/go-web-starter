@@ -15,7 +15,7 @@ type MockRouter struct {
 }
 
 func (m *MockRouter) Run(addr ...string) error {
-	args := m.Called(addr)
+	args := m.Called(addr[0])
 	return args.Error(0)
 }
 
@@ -97,16 +97,41 @@ func TestRegisterRoutes(t *testing.T) {
 	assert.Greater(t, len(routes), 0)
 }
 
-func TestStartSuccess(t *testing.T) {
+func TestNew(t *testing.T) {
+	originalDefaultNew := DefaultNew
+	defer func() { DefaultNew = originalDefaultNew }()
+
 	port := 8080
-	mockRouter := new(MockRouter)
-	srv := &Server{
-		router: mockRouter,
-		port:   port,
+	DefaultNew = func(p int) ServerInterface {
+		gin.SetMode(gin.TestMode)
+		router := gin.New()
+
+		srv := &Server{
+			router: &routerWrapper{
+				Router:  router,
+				IRouter: router,
+			},
+			port: p,
+		}
+		return srv
 	}
 
-	expectedAddr := fmt.Sprintf(":%d", port)
-	mockRouter.On("Run", []string{expectedAddr}).Return(nil)
+	srv := New(port)
+	assert.NotNil(t, srv)
+
+	serverImpl, ok := srv.(*Server)
+	assert.True(t, ok)
+	assert.Equal(t, port, serverImpl.port)
+}
+
+func TestStartSuccess(t *testing.T) {
+	mockRouter := new(MockRouter)
+	mockRouter.On("Run", ":8080").Return(nil)
+
+	srv := &Server{
+		router: mockRouter,
+		port:   8080,
+	}
 
 	err := srv.Start()
 	assert.NoError(t, err)
@@ -114,16 +139,14 @@ func TestStartSuccess(t *testing.T) {
 }
 
 func TestStartError(t *testing.T) {
-	port := 8080
 	mockRouter := new(MockRouter)
+	expectedErr := fmt.Errorf("router error")
+	mockRouter.On("Run", ":8080").Return(expectedErr)
+
 	srv := &Server{
 		router: mockRouter,
-		port:   port,
+		port:   8080,
 	}
-
-	expectedAddr := fmt.Sprintf(":%d", port)
-	expectedErr := fmt.Errorf("failed to start server")
-	mockRouter.On("Run", []string{expectedAddr}).Return(expectedErr)
 
 	err := srv.Start()
 	assert.Error(t, err)
