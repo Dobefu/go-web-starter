@@ -39,6 +39,11 @@ func initConfig() {
 
 	if cfgFile == "" {
 		if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
+			viper.Set("database.host", config.DefaultConfig.Database.Host)
+			viper.Set("database.port", config.DefaultConfig.Database.Port)
+			viper.Set("database.user", config.DefaultConfig.Database.User)
+			viper.Set("database.password", config.DefaultConfig.Database.Password)
+			viper.Set("database.dbname", config.DefaultConfig.Database.DBName)
 			viper.Set("server.port", config.DefaultConfig.Server.Port)
 			viper.Set("server.host", config.DefaultConfig.Server.Host)
 
