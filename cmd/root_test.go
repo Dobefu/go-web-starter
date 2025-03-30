@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -97,4 +98,29 @@ func TestConfigFlag(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, tmpFile.Name(), cfgFile)
+}
+
+func TestInitConfigDefaultCreation(t *testing.T) {
+	originalCfgFile := cfgFile
+	defer func() { cfgFile = originalCfgFile }()
+
+	tmpDir, err := os.MkdirTemp("", "config_test_*")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	originalWd, err := os.Getwd()
+	assert.NoError(t, err)
+
+	err = os.Chdir(tmpDir)
+	assert.NoError(t, err)
+	defer os.Chdir(originalWd)
+
+	cfgFile = ""
+
+	initConfig()
+
+	_, err = os.Stat("config.toml")
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, config.DefaultConfig)
 }
