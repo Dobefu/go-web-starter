@@ -9,3 +9,7 @@ tmp/
 
 # NodeJS packages.
 node_modules/
+
+# Built CSS files.
+static/css/dist/*
+!static/css/dist/.gitkeep
