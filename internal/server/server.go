@@ -32,13 +32,14 @@ type NewServerFunc func(port int) ServerInterface
 
 func defaultNew(port int) ServerInterface {
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	router := gin.New()
 
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/static", "./static")
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(middleware.CORS())
 	router.Use(middleware.SecurityHeaders())
 
 	srv := &Server{
@@ -60,6 +61,7 @@ func NewTestServer(port int) ServerInterface {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
+	router.Use(middleware.CORS())
 	router.Use(middleware.SecurityHeaders())
 
 	srv := &Server{
