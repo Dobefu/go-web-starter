@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
-	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -30,28 +30,16 @@ func TestDefaultNew(t *testing.T) {
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
 
-	originalDefaultNew := DefaultNew
-	DefaultNew = func(port int) ServerInterface {
-		gin.SetMode(gin.ReleaseMode)
-		router := gin.Default()
+	err := os.MkdirAll("templates", 0755)
+	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll("templates") }()
 
-		router.Use(gin.Logger())
-		router.Use(gin.Recovery())
-		router.Use(middleware.SecurityHeaders())
+	err = os.WriteFile("templates/index.html", []byte("{{define \"index\"}}test{{end}}"), 0644)
+	assert.NoError(t, err)
 
-		srv := &Server{
-			router: &routerWrapper{
-				Router:  router,
-				IRouter: router,
-			},
-			port: port,
-		}
-
-		srv.registerRoutes()
-		return srv
-	}
-
-	defer func() { DefaultNew = originalDefaultNew }()
+	err = os.MkdirAll("static", 0755)
+	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll("static") }()
 
 	port := 8080
 	srv := DefaultNew(port).(*Server)
