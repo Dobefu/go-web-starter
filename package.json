@@ -4,7 +4,9 @@
   "description": "",
   "scripts": {
     "build:css": "pnpm dlx @tailwindcss/cli -i ./static/css/src/main.css -o ./static/css/dist/main.css",
-    "watch:css": "pnpm dlx @tailwindcss/cli -i ./static/css/src/main.css -o ./static/css/dist/main.css --watch"
+    "watch:css": "pnpm dlx @tailwindcss/cli -i ./static/css/src/main.css -o ./static/css/dist/main.css --watch",
+    "lint": "prettier . --check",
+    "lint:fix": "prettier . --write"
   },
   "keywords": [],
   "author": "",
