@@ -22,7 +22,6 @@ func NewCSPConfig() CSPConfig {
 				"self",
 			},
 			"script-src": {
-				"self",
 				"strict-dynamic",
 				"sha256-shfdQDc5l63QrdRcyAdIpEYqlgxbfEfXuTNyWpgtloM=",
 			},
