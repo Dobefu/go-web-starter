@@ -9,6 +9,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type DatabaseInterface interface {
+	Close() error
+	Ping() error
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) (*sql.Row, error)
+	Exec(query string, args ...any) (sql.Result, error)
+	Begin() (*sql.Tx, error)
+}
+
 type Config struct {
 	Host     string
 	Port     int
@@ -22,9 +31,17 @@ type Database struct {
 	logger *logger.Logger
 }
 
+var errNotInitialized error = fmt.Errorf("database not initialized")
+
 func New(cfg Config, log *logger.Logger) (*Database, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+	dsn := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Password,
+		cfg.DBName,
+	)
 
 	db, err := sql.Open("postgres", dsn)
 
@@ -56,31 +73,31 @@ func (d *Database) Close() error {
 
 func (d *Database) Ping() error {
 	if d.db == nil {
-		return fmt.Errorf("database not initialized")
+		return errNotInitialized
 	}
 
 	return d.db.Ping()
 }
 
-func (d *Database) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (d *Database) Query(query string, args ...any) (*sql.Rows, error) {
 	if d.db == nil {
-		return nil, fmt.Errorf("database not initialized")
+		return nil, errNotInitialized
 	}
 
 	return d.db.Query(query, args...)
 }
 
-func (d *Database) QueryRow(query string, args ...interface{}) *sql.Row {
+func (d *Database) QueryRow(query string, args ...any) (*sql.Row, error) {
 	if d.db == nil {
-		return nil
+		return nil, errNotInitialized
 	}
 
-	return d.db.QueryRow(query, args...)
+	return d.db.QueryRow(query, args...), nil
 }
 
-func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (d *Database) Exec(query string, args ...any) (sql.Result, error) {
 	if d.db == nil {
-		return nil, fmt.Errorf("database not initialized")
+		return nil, errNotInitialized
 	}
 
 	return d.db.Exec(query, args...)
@@ -88,7 +105,7 @@ func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
 
 func (d *Database) Begin() (*sql.Tx, error) {
 	if d.db == nil {
-		return nil, fmt.Errorf("database not initialized")
+		return nil, errNotInitialized
 	}
 
 	return d.db.Begin()
