@@ -4,6 +4,7 @@ default: build
 
 build:
 	@printf "Building the application...\n"
+	@pnpm build:css
 	@go build -ldflags="-s -w" -o app
 
 run: build
