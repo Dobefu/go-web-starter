@@ -20,7 +20,7 @@ var DefaultConfig = Config{
 		Port int    `mapstructure:"port"`
 		Host string `mapstructure:"host"`
 	}{
-		Port: 8080,
+		Port: 4000,
 		Host: "localhost",
 	},
 	Database: struct {
@@ -30,9 +30,10 @@ var DefaultConfig = Config{
 		Password string `mapstructure:"password"`
 		DBName   string `mapstructure:"dbname"`
 	}{
-		Host:   "localhost",
-		Port:   5432,
-		User:   "postgres",
-		DBName: "app",
+		Host:     "127.0.0.1",
+		Port:     2345,
+		User:     "root",
+		Password: "root",
+		DBName:   "db",
 	},
 }

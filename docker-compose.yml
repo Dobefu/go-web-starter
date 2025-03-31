@@ -1,4 +1,4 @@
-name: cms
+name: go-web-starter
 
 services:
   db:
