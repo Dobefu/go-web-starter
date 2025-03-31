@@ -9,7 +9,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+	quiet   bool
+	verbose int
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "./app",
@@ -23,6 +27,9 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "The config file to use (default: ./config.toml)")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors")
+	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Enable verbose output (use -vv for debug output, -vvv for trace output)")
+	rootCmd.PersistentFlags().MarkHidden("verbose")
 }
 
 func initConfig() {
