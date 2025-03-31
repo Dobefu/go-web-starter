@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -65,5 +67,17 @@ func migrateDown(cmd *cobra.Command, args []string) {
 }
 
 func migrateVersion(cmd *cobra.Command, args []string) {
+	version, err := database.MigrateVersion(database.Config{
+		Host:     viper.GetString("database.host"),
+		Port:     viper.GetInt("database.port"),
+		User:     viper.GetString("database.user"),
+		Password: viper.GetString("database.password"),
+		DBName:   viper.GetString("database.dbname"),
+	})
 
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("The migrations are at version %d\n", version)
 }

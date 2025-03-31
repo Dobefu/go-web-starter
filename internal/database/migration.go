@@ -125,6 +125,24 @@ func MigrateUp(cfg Config) (err error) {
 	return nil
 }
 
+func MigrateVersion(cfg Config) (version int, err error) {
+	dbConn, _ := New(cfg, nil)
+
+	row, err := dbConn.QueryRow("SELECT version FROM migrations LIMIT 1")
+
+	if err != nil {
+		return 0, err
+	}
+
+	err = row.Scan(&version)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return version, nil
+}
+
 func createMigrationsTable(dbConn *Database) (err error) {
 	_, err = dbConn.Exec(`
     CREATE TABLE IF NOT EXISTS migrations(
