@@ -11,7 +11,8 @@ import (
 type Level int
 
 const (
-	DebugLevel Level = iota
+	TraceLevel Level = iota
+	DebugLevel
 	InfoLevel
 	WarnLevel
 	ErrorLevel
@@ -41,7 +42,7 @@ func (l *Logger) WithRequestID(requestID string) *Logger {
 }
 
 func (l *Logger) log(level Level, msg string, fields Fields) {
-	if l.level != DebugLevel && level < l.level {
+	if l.level != TraceLevel && level < l.level {
 		return
 	}
 
@@ -71,6 +72,8 @@ func (l *Logger) log(level Level, msg string, fields Fields) {
 
 func (l *Logger) getLevelColor(level Level) *color.Color {
 	switch level {
+	case TraceLevel:
+		return color.New(color.FgMagenta)
 	case DebugLevel:
 		return color.New(color.FgCyan)
 	case InfoLevel:
@@ -86,6 +89,8 @@ func (l *Logger) getLevelColor(level Level) *color.Color {
 
 func (l Level) String() string {
 	switch l {
+	case TraceLevel:
+		return "TRACE"
 	case DebugLevel:
 		return "DEBUG"
 	case InfoLevel:
@@ -97,6 +102,10 @@ func (l Level) String() string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+func (l *Logger) Trace(msg string, fields Fields) {
+	l.log(TraceLevel, msg, fields)
 }
 
 func (l *Logger) Debug(msg string, fields Fields) {
