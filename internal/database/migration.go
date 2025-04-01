@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 )
 
@@ -26,13 +27,13 @@ type ContentFS struct {
 var contentFS = ContentFS{content: content}
 
 func MigrateDown(cfg Config) (err error) {
-	logInfo := logger.New(logger.InfoLevel, os.Stdout)
+	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
 
 	version, _ := getMigrationState(dbConn)
 
 	if version == 0 {
-		logInfo.Info("Nothing to revert", nil)
+		log.Info("Nothing to revert", nil)
 		return nil
 	}
 
@@ -58,7 +59,7 @@ func MigrateDown(cfg Config) (err error) {
 			continue
 		}
 
-		logInfo.Info(fmt.Sprintf("Running migration: %s", name), nil)
+		log.Info(fmt.Sprintf("Running migration: %s", name), nil)
 		err = runMigration(dbConn, name, migrationIndex)
 
 		if err != nil {
@@ -76,7 +77,7 @@ func MigrateDown(cfg Config) (err error) {
 }
 
 func MigrateUp(cfg Config) (err error) {
-	logInfo := logger.New(logger.InfoLevel, os.Stdout)
+	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
 
 	err = createMigrationsTable(dbConn)
@@ -108,7 +109,7 @@ func MigrateUp(cfg Config) (err error) {
 			continue
 		}
 
-		logInfo.Info(fmt.Sprintf("Running migration: %s", name), nil)
+		log.Info(fmt.Sprintf("Running migration: %s", name), nil)
 		err = runMigration(dbConn, name, migrationIndex)
 
 		if err != nil {

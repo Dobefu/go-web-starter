@@ -17,7 +17,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "./app",
-	Short: "The main command to manage the website",
+	Short: "Manage the website",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Usage()
 	},
@@ -29,7 +29,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "The config file to use (default: ./config.toml)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors")
 	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Enable verbose output (use -vv for debug output, -vvv for trace output)")
-	rootCmd.PersistentFlags().MarkHidden("verbose")
 }
 
 func initConfig() {
@@ -54,6 +53,7 @@ func initConfig() {
 			viper.Set("database.dbname", config.DefaultConfig.Database.DBName)
 			viper.Set("server.port", config.DefaultConfig.Server.Port)
 			viper.Set("server.host", config.DefaultConfig.Server.Host)
+			viper.Set("log.level", config.DefaultConfig.Log.Level)
 
 			dir := filepath.Dir(defaultConfigFile)
 
