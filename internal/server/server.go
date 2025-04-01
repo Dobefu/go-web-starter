@@ -38,7 +38,7 @@ func defaultNew(port int) ServerInterface {
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/static", "./static")
 
-	router.Use(gin.Logger())
+	router.Use(middleware.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimit(1000, time.Minute))
 	router.Use(middleware.CorsHeaders())

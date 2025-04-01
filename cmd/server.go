@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/server"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +39,8 @@ func ServerCmd(cmd *cobra.Command, args []string) {
 }
 
 func runServer(srv server.ServerInterface, port int) error {
-	fmt.Printf("Starting server on port %d...\n", port)
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+	log.Info(fmt.Sprintf("Starting server on port %d", port), nil)
+
 	return srv.Start()
 }
