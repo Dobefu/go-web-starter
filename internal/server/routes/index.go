@@ -6,13 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type IndexData struct {
-	Title       string
-	Description string
-}
-
 func Index(c *gin.Context) {
-	data := IndexData{
+	data := RouteData{
 		Title:       "INDEX",
 		Description: "INDEX",
 	}
