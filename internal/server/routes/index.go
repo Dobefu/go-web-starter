@@ -7,8 +7,7 @@ import (
 )
 
 type IndexData struct {
-	Title   string
-	Content string
+	Title string
 }
 
 func Index(c *gin.Context) {
@@ -16,5 +15,5 @@ func Index(c *gin.Context) {
 		Title: "INDEX",
 	}
 
-	c.HTML(http.StatusOK, "index.html", data)
+	c.HTML(http.StatusOK, "index.html.tmpl", data)
 }

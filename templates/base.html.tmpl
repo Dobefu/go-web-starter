@@ -11,8 +11,13 @@
     <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico" />
 
     <link href="/static/css/dist/main.css" rel="stylesheet" />
+    {{ template "head" . }}
   </head>
   <body>
-    <h1>{{ .Title }}</h1>
+    <main id="main-content">
+      {{ template "content" . }}
+    </main>
+
+    {{ template "scripts" . }}
   </body>
 </html>
