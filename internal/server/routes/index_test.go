@@ -13,7 +13,7 @@ import (
 func TestIndex(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.LoadHTMLGlob(filepath.Join("..", "..", "..", "templates", "*.html"))
+	router.LoadHTMLGlob(filepath.Join("..", "..", "..", "templates", "*.html.tmpl"))
 	router.GET("/", Index)
 
 	w := httptest.NewRecorder()
