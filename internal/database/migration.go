@@ -30,7 +30,11 @@ func MigrateDown(cfg Config) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
 
-	version, _ := getMigrationState(dbConn)
+	version, dirty := getMigrationState(dbConn)
+
+	if dirty {
+		return fmt.Errorf("the migrations table is in a dirty state")
+	}
 
 	if version == 0 {
 		log.Info("Nothing to revert", nil)
@@ -86,7 +90,11 @@ func MigrateUp(cfg Config) (err error) {
 		return err
 	}
 
-	version, _ := getMigrationState(dbConn)
+	version, dirty := getMigrationState(dbConn)
+
+	if dirty {
+		return fmt.Errorf("the migrations table is in a dirty state")
+	}
 
 	files, err := contentFS.content.ReadDir("migrations")
 

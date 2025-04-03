@@ -33,7 +33,7 @@ type Database struct {
 
 var errNotInitialized error = fmt.Errorf("database not initialized")
 
-func New(cfg Config, log *logger.Logger) (*Database, error) {
+var New = func(cfg Config, log *logger.Logger) (*Database, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,
