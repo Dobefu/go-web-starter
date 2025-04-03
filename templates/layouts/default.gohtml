@@ -1,30 +1,35 @@
 {{ define "layouts/default" }}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>{{ .Title }}</title>
-    <meta name="description" content="{{ .Description }}">
+      <title>{{ .Title }}</title>
+      <meta name="description" content="{{ .Description }}" />
 
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico" />
+      <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+      <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+      <link
+        rel="shortcut icon"
+        type="image/x-icon"
+        href="/static/favicon.ico"
+      />
 
-    <link href="/static/css/dist/main.css" rel="stylesheet" />
-    {{ template "head" . }}
-  </head>
-  <body>
-    {{ template "components/layout/header" . }}
+      <link href="/static/css/dist/main.css" rel="stylesheet" />
+      {{ template "head" . }}
+    </head>
+    <body>
+      {{ template "components/layout/header" . }}
 
-    <main id="main-content">
-      {{ template "content" . }}
-    </main>
 
-    {{ template "components/layout/footer" . }}
+      <main id="main-content">
+        {{ template "content" . }}
+      </main>
 
-    {{ template "scripts" . }}
-  </body>
-</html>
+      {{ template "components/layout/footer" . }}
+
+      {{ template "scripts" . }}
+    </body>
+  </html>
 {{ end }}
