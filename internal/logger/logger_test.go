@@ -66,15 +66,17 @@ func TestBasicLogging(t *testing.T) {
 func TestLogLevelFiltering(t *testing.T) {
 	t.Parallel()
 
-	logger, cleanup := createTempLogger(t, InfoLevel)
+	logger, cleanup := createTempLogger(t, DebugLevel)
 
-	logger.Debug("Should not appear", nil)
+	logger.Trace("Should not appear", nil)
+	logger.Debug("Should appear", nil)
 	logger.Info("Should appear", nil)
 	logger.Warn("Should appear", nil)
 	logger.Error("Should appear", nil)
 
 	output := cleanup()
-	assert.NotContains(t, output, "DEBUG")
+	assert.NotContains(t, output, "TRACE")
+	assert.Contains(t, output, "DEBUG")
 	assert.Contains(t, output, "INFO")
 	assert.Contains(t, output, "WARN")
 	assert.Contains(t, output, "ERROR")
@@ -87,8 +89,8 @@ func TestColorOutput(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = pr.Close() }()
 
-	logger := New(DebugLevel, pw)
-	logger.Debug("Test message", nil)
+	logger := New(TraceLevel, pw)
+	logger.Trace("Test message", nil)
 	err = pw.Close()
 	assert.NoError(t, err)
 
@@ -107,7 +109,7 @@ func TestColorOutput(t *testing.T) {
 
 	assert.Contains(t, content, "\033[")
 	assert.Contains(t, content, "\033[90m")
-	assert.Contains(t, content, "\033[36m")
+	assert.Contains(t, content, "\033[35m")
 	assert.Contains(t, content, "\033[37m")
 }
 
