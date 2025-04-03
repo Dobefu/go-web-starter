@@ -1,8 +1,10 @@
-{{ template "base.html.tmpl" . }}
+{{ define "pages/index" }}
+  {{ template "layout_base" . }}
+{{ end }}
 
 {{ define "head" }}{{ end }}
 {{ define "scripts" }}{{ end }}
 
 {{ define "content" }}
-<h1>{{ .Title }}</h1>
+  <h1>{{ .Title }}</h1>
 {{ end }}

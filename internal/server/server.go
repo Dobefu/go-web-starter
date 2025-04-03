@@ -1,7 +1,10 @@
 package server
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
@@ -35,7 +38,13 @@ func defaultNew(port int) ServerInterface {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	router.LoadHTMLGlob("templates/*")
+	templates, err := loadTemplates("templates", 0)
+
+	if err != nil {
+		panic(err)
+	}
+
+	router.LoadHTMLFiles(templates...)
 	router.Static("/static", "./static")
 
 	router.Use(middleware.Logger())
@@ -93,4 +102,38 @@ func (srv *Server) Start() error {
 	addr := fmt.Sprintf(":%d", srv.port)
 
 	return srv.router.Run(addr)
+}
+
+func loadTemplates(root string, depth int) (files []string, err error) {
+	if depth > 10 {
+		return files, errors.New("max recursion depth of 10 exceeded")
+	}
+
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		fileInfo, err := os.Stat(path)
+
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.IsDir() {
+			if path != root {
+				_, err = loadTemplates(path, depth+1)
+
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			files = append(files, path)
+		}
+
+		return err
+	})
+
+	return files, err
 }

@@ -12,5 +12,5 @@ func Index(c *gin.Context) {
 		Description: "INDEX",
 	}
 
-	c.HTML(http.StatusOK, "index.html.tmpl", data)
+	c.HTML(http.StatusOK, "pages/index", data)
 }
