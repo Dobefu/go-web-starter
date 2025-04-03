@@ -1,4 +1,4 @@
-{{ define "layout_base" }}
+{{ define "layouts/default" }}
 <!doctype html>
 <html lang="en">
   <head>
@@ -16,6 +16,8 @@
     {{ template "head" . }}
   </head>
   <body>
+    {{ template "components/layout/header" . }}
+
     <main id="main-content">
       {{ template "content" . }}
     </main>
