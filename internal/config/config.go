@@ -25,7 +25,9 @@ type Config struct {
 }
 
 func GetLogLevel() logger.Level {
-	if level := viper.GetInt("log.level"); level > 0 {
+	level := viper.GetInt("log.level")
+
+	if level > 0 {
 		return logger.Level(level)
 	}
 
