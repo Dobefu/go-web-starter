@@ -65,7 +65,7 @@ var New = func(cfg Config, log *logger.Logger) (*Database, error) {
 
 func (d *Database) Close() error {
 	if d.db == nil {
-		return nil
+		return errNotInitialized
 	}
 
 	return d.db.Close()
