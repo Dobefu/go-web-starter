@@ -11,5 +11,5 @@ func TestRegisterSuccess(t *testing.T) {
 
 	router := gin.New()
 
-	Register(router)
+	RegisterRoutes(router)
 }

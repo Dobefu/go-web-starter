@@ -97,7 +97,7 @@ func New(port int) ServerInterface {
 // The registerRoutes function uses a type assertion to access Gin's routing capabilities.
 // This is safe because routerWrapper implements gin.IRouter.
 func (srv *Server) registerRoutes() {
-	routes.Register(srv.router.(gin.IRouter))
+	routes.RegisterRoutes(srv.router.(gin.IRouter))
 }
 
 func (srv *Server) Start() error {
