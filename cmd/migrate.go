@@ -39,13 +39,7 @@ func init() {
 }
 
 func migrateUp(cmd *cobra.Command, args []string) {
-	err := database.MigrateUp(database.Config{
-		Host:     viper.GetString("database.host"),
-		Port:     viper.GetInt("database.port"),
-		User:     viper.GetString("database.user"),
-		Password: viper.GetString("database.password"),
-		DBName:   viper.GetString("database.dbname"),
-	})
+	err := database.MigrateUp(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
@@ -53,13 +47,7 @@ func migrateUp(cmd *cobra.Command, args []string) {
 }
 
 func migrateDown(cmd *cobra.Command, args []string) {
-	err := database.MigrateDown(database.Config{
-		Host:     viper.GetString("database.host"),
-		Port:     viper.GetInt("database.port"),
-		User:     viper.GetString("database.user"),
-		Password: viper.GetString("database.password"),
-		DBName:   viper.GetString("database.dbname"),
-	})
+	err := database.MigrateDown(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
@@ -67,17 +55,21 @@ func migrateDown(cmd *cobra.Command, args []string) {
 }
 
 func migrateVersion(cmd *cobra.Command, args []string) {
-	version, err := database.MigrateVersion(database.Config{
-		Host:     viper.GetString("database.host"),
-		Port:     viper.GetInt("database.port"),
-		User:     viper.GetString("database.user"),
-		Password: viper.GetString("database.password"),
-		DBName:   viper.GetString("database.dbname"),
-	})
+	version, err := database.MigrateVersion(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("The migrations are at version %d\n", version)
+}
+
+func getDatabaseConfig() database.Config {
+	return database.Config{
+		Host:     viper.GetString("database.host"),
+		Port:     viper.GetInt("database.port"),
+		User:     viper.GetString("database.user"),
+		Password: viper.GetString("database.password"),
+		DBName:   viper.GetString("database.dbname"),
+	}
 }
