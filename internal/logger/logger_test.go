@@ -38,8 +38,6 @@ func createTempLogger(t *testing.T, level Level) (*Logger, func() string) {
 }
 
 func TestBasicLogging(t *testing.T) {
-	t.Parallel()
-
 	logger, cleanup := createTempLogger(t, DebugLevel)
 
 	logger.Debug("Debug message", Fields{"key": "value"})
@@ -83,8 +81,6 @@ func TestLogLevelFiltering(t *testing.T) {
 }
 
 func TestColorOutput(t *testing.T) {
-	t.Parallel()
-
 	pr, pw, err := os.Pipe()
 	assert.NoError(t, err)
 	defer func() { _ = pr.Close() }()
@@ -114,8 +110,6 @@ func TestColorOutput(t *testing.T) {
 }
 
 func TestUnknownLevel(t *testing.T) {
-	t.Parallel()
-
 	unknownLevel := Level(9001)
 	assert.Equal(t, "UNKNOWN", unknownLevel.String())
 
