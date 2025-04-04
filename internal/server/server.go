@@ -52,6 +52,7 @@ func defaultNew(port int) ServerInterface {
 	router.Use(middleware.RateLimit(1000, time.Minute))
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
+	router.Use(middleware.Minify())
 
 	srv := &Server{
 		router: &routerWrapper{
@@ -75,6 +76,7 @@ func NewTestServer(port int) ServerInterface {
 	router.Use(middleware.RateLimit(1000, time.Minute))
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
+	router.Use(middleware.Minify())
 
 	srv := &Server{
 		router: &routerWrapper{
