@@ -26,7 +26,7 @@ type ContentFS struct {
 
 var contentFS = ContentFS{content: content}
 
-func MigrateDown(cfg Config) (err error) {
+func MigrateDown(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
 
@@ -80,7 +80,7 @@ func MigrateDown(cfg Config) (err error) {
 	return nil
 }
 
-func MigrateUp(cfg Config) (err error) {
+func MigrateUp(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
 
@@ -134,7 +134,7 @@ func MigrateUp(cfg Config) (err error) {
 	return nil
 }
 
-func MigrateVersion(cfg Config) (version int, err error) {
+func MigrateVersion(cfg config.Database) (version int, err error) {
 	dbConn, _ := New(cfg, nil)
 
 	row, err := dbConn.QueryRow("SELECT version FROM migrations LIMIT 1")

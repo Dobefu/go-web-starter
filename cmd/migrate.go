@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -64,8 +65,8 @@ func migrateVersion(cmd *cobra.Command, args []string) {
 	fmt.Printf("The migrations are at version %d\n", version)
 }
 
-func getDatabaseConfig() database.Config {
-	return database.Config{
+func getDatabaseConfig() config.Database {
+	return config.Database{
 		Host:     viper.GetString("database.host"),
 		Port:     viper.GetInt("database.port"),
 		User:     viper.GetString("database.user"),

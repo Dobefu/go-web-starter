@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	_ "github.com/lib/pq"
 )
@@ -18,14 +19,6 @@ type DatabaseInterface interface {
 	Begin() (*sql.Tx, error)
 }
 
-type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-}
-
 type Database struct {
 	db     *sql.DB
 	logger *logger.Logger
@@ -33,7 +26,7 @@ type Database struct {
 
 var errNotInitialized error = fmt.Errorf("database not initialized")
 
-var New = func(cfg Config, log *logger.Logger) (*Database, error) {
+var New = func(cfg config.Database, log *logger.Logger) (*Database, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,

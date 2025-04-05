@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,7 +48,7 @@ func setupTest(t *testing.T) (sqlmock.Sqlmock, *Database, func()) {
 
 	originalNew := New
 
-	New = func(cfg Config, log *logger.Logger) (*Database, error) {
+	New = func(cfg config.Database, log *logger.Logger) (*Database, error) {
 		return &Database{db: db}, nil
 	}
 
@@ -286,8 +287,8 @@ func TestRunMigration(t *testing.T) {
 	}
 }
 
-func getTestConfig() Config {
-	return Config{
+func getTestConfig() config.Database {
+	return config.Database{
 		Host:     "localhost",
 		Port:     5432,
 		User:     "test",
