@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -12,7 +10,7 @@ func RegisterRoutes(router gin.IRouter) {
 	router.GET("/health", HealthCheck)
 }
 
-func RenderRoute(c *gin.Context, routeData RouteData) {
+func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 	data := struct {
 		RouteData
 		SiteName string
@@ -21,5 +19,5 @@ func RenderRoute(c *gin.Context, routeData RouteData) {
 		SiteName:  viper.GetString("site.name"),
 	}
 
-	c.HTML(http.StatusOK, data.Template, data)
+	c.HTML(data.HttpStatus, data.Template, data)
 }
