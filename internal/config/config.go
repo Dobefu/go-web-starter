@@ -26,11 +26,20 @@ type Site struct {
 	Name string `mapstructure:"name"`
 }
 
+type Redis struct {
+	Enable   bool   `mapstructure:"enable"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
 type Config struct {
 	Server   Server   `mapstructure:"server"`
 	Database Database `mapstructure:"database"`
 	Log      Log      `mapstructure:"log"`
 	Site     Site     `mapstructure:"site"`
+	Redis    Redis    `mapstructure:"redis"`
 }
 
 func GetLogLevel() logger.Level {
@@ -60,5 +69,12 @@ var DefaultConfig = Config{
 	},
 	Site: Site{
 		Name: "Go Web Starter",
+	},
+	Redis: Redis{
+		Enable:   true,
+		Host:     "127.0.0.1",
+		Port:     9736,
+		Password: "root",
+		DB:       0,
 	},
 }

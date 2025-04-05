@@ -57,6 +57,11 @@ func initConfig() {
 			viper.Set("server.host", config.DefaultConfig.Server.Host)
 			viper.Set("log.level", config.DefaultConfig.Log.Level)
 			viper.Set("site.name", config.DefaultConfig.Site.Name)
+			viper.Set("redis.enable", config.DefaultConfig.Redis.Enable)
+			viper.Set("redis.host", config.DefaultConfig.Redis.Host)
+			viper.Set("redis.port", config.DefaultConfig.Redis.Port)
+			viper.Set("redis.password", config.DefaultConfig.Redis.Password)
+			viper.Set("redis.db", config.DefaultConfig.Redis.DB)
 
 			dir := filepath.Dir(defaultConfigFile)
 
