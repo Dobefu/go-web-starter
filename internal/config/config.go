@@ -5,23 +5,27 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Server struct {
+	Port int    `mapstructure:"port"`
+	Host string `mapstructure:"host"`
+}
+
+type Database struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
+}
+
+type Log struct {
+	Level int `mapstructure:"level"`
+}
+
 type Config struct {
-	Server struct {
-		Port int    `mapstructure:"port"`
-		Host string `mapstructure:"host"`
-	} `mapstructure:"server"`
-
-	Database struct {
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-		DBName   string `mapstructure:"dbname"`
-	} `mapstructure:"database"`
-
-	Log struct {
-		Level int `mapstructure:"level"`
-	} `mapstructure:"log"`
+	Server   `mapstructure:"server"`
+	Database `mapstructure:"database"`
+	Log      `mapstructure:"log"`
 }
 
 func GetLogLevel() logger.Level {
@@ -31,33 +35,22 @@ func GetLogLevel() logger.Level {
 		return logger.Level(level)
 	}
 
-	return logger.Level(DefaultConfig.Log.Level)
+	return logger.Level(DefaultConfig.Level)
 }
 
 var DefaultConfig = Config{
-	Server: struct {
-		Port int    `mapstructure:"port"`
-		Host string `mapstructure:"host"`
-	}{
+	Server: Server{
 		Port: 4000,
 		Host: "localhost",
 	},
-	Database: struct {
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-		DBName   string `mapstructure:"dbname"`
-	}{
+	Database: Database{
 		Host:     "127.0.0.1",
 		Port:     2345,
 		User:     "root",
 		Password: "root",
 		DBName:   "db",
 	},
-	Log: struct {
-		Level int `mapstructure:"level"`
-	}{
+	Log: Log{
 		Level: int(logger.InfoLevel),
 	},
 }
