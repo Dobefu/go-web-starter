@@ -19,8 +19,10 @@ func (w *ResponseWriter) Write(b []byte) (int, error) {
 }
 
 func Minify() gin.HandlerFunc {
+	textHtmlMime := "text/html"
+
 	m := minify.New()
-	m.AddFunc("text/html", html.Minify)
+	m.AddFunc(textHtmlMime, html.Minify)
 
 	return func(c *gin.Context) {
 		buf := new(bytes.Buffer)
@@ -35,8 +37,8 @@ func Minify() gin.HandlerFunc {
 		c.Next()
 
 		contentType := originalWriter.Header().Get("Content-Type")
-		if contentType == "text/html" || contentType == "text/html; charset=utf-8" {
-			minified, err := m.String("text/html", buf.String())
+		if contentType == textHtmlMime || contentType == "text/html; charset=utf-8" {
+			minified, err := m.String(textHtmlMime, buf.String())
 
 			if err != nil {
 				c.Data(originalWriter.Status(), contentType, buf.Bytes())
