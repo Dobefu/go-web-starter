@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = ["server", "--port", "40000"]
-  bin = "./app"
+  bin = "./app -vvv"
   cmd = "go build -ldflags=\"-s -w\" -o app"
   delay = 100
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
