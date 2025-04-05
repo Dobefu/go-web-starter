@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,5 +11,5 @@ func NotFound(c *gin.Context) {
 		Template:    "pages/not-found",
 	}
 
-	c.HTML(http.StatusOK, data.Template, data)
+	RenderRoute(c, data)
 }

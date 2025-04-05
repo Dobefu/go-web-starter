@@ -45,7 +45,9 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if cfgFile == "" {
-		if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
+		_, err := os.Stat(defaultConfigFile)
+
+		if os.IsNotExist(err) {
 			viper.Set("database.host", config.DefaultConfig.Database.Host)
 			viper.Set("database.port", config.DefaultConfig.Database.Port)
 			viper.Set("database.user", config.DefaultConfig.Database.User)

@@ -59,6 +59,6 @@ var DefaultConfig = Config{
 		Level: int(logger.InfoLevel),
 	},
 	Site: Site{
-		Name: "My New Site",
+		Name: "Go Web Starter",
 	},
 }
