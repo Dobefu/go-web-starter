@@ -9,18 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIndex(t *testing.T) {
+func TestNotFound(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
 	router.LoadHTMLGlob("../../../templates/**/*.gohtml")
-	router.GET("/", Index)
+	router.GET("/bogus", NotFound)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest("GET", "/bogus", nil)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
