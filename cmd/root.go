@@ -54,6 +54,7 @@ func initConfig() {
 			viper.Set("server.port", config.DefaultConfig.Server.Port)
 			viper.Set("server.host", config.DefaultConfig.Server.Host)
 			viper.Set("log.level", config.DefaultConfig.Log.Level)
+			viper.Set("site.name", config.DefaultConfig.Site.Name)
 
 			dir := filepath.Dir(defaultConfigFile)
 

@@ -22,10 +22,15 @@ type Log struct {
 	Level int `mapstructure:"level"`
 }
 
+type Site struct {
+	Name string `mapstructure:"name"`
+}
+
 type Config struct {
-	Server   `mapstructure:"server"`
-	Database `mapstructure:"database"`
-	Log      `mapstructure:"log"`
+	Server   Server   `mapstructure:"server"`
+	Database Database `mapstructure:"database"`
+	Log      Log      `mapstructure:"log"`
+	Site     Site     `mapstructure:"site"`
 }
 
 func GetLogLevel() logger.Level {
@@ -35,7 +40,7 @@ func GetLogLevel() logger.Level {
 		return logger.Level(level)
 	}
 
-	return logger.Level(DefaultConfig.Level)
+	return logger.Level(DefaultConfig.Log.Level)
 }
 
 var DefaultConfig = Config{
@@ -52,5 +57,8 @@ var DefaultConfig = Config{
 	},
 	Log: Log{
 		Level: int(logger.InfoLevel),
+	},
+	Site: Site{
+		Name: "My New Site",
 	},
 }
