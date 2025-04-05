@@ -1,4 +1,4 @@
-{{ define "layouts/default" }}
+{{ define "layouts/default/head" }}
   <!doctype html>
   <html class="h-full" lang="en">
     <head>
@@ -17,19 +17,18 @@
       />
 
       <link href="/static/css/dist/main.css" rel="stylesheet" />
-      {{ template "head" . }}
     </head>
     <body class="flex min-h-full flex-col antialiased">
       {{ template "components/layout/header" . }}
 
 
       <main class="flex-1" id="main-content">
-        {{ template "content" . }}
+{{ end }}
+
+{{ define "layouts/default/foot" }}
       </main>
 
       {{ template "components/layout/footer" . }}
-
-      {{ template "scripts" . }}
     </body>
   </html>
 {{ end }}

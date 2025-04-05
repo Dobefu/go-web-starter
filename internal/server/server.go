@@ -62,6 +62,7 @@ func defaultNew(port int) ServerInterface {
 		port: port,
 	}
 
+	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
 	return srv
 }
@@ -86,6 +87,7 @@ func NewTestServer(port int) ServerInterface {
 		port: port,
 	}
 
+	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
 	return srv
 }

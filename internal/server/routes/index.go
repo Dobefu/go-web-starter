@@ -10,7 +10,8 @@ func Index(c *gin.Context) {
 	data := RouteData{
 		Title:       "INDEX",
 		Description: "INDEX",
+		Template:    "pages/index",
 	}
 
-	c.HTML(http.StatusOK, "pages/index", data)
+	c.HTML(http.StatusOK, data.Template, data)
 }
