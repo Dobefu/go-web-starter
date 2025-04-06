@@ -12,8 +12,6 @@ import (
 )
 
 func TestIndex(t *testing.T) {
-	t.Parallel()
-
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()

@@ -62,7 +62,6 @@ func newTestRouter() *gin.Engine {
 }
 
 func TestMinifyText(t *testing.T) {
-	t.Parallel()
 	router := newTestRouter()
 
 	router.GET("/", func(c *gin.Context) {
@@ -80,7 +79,6 @@ func TestMinifyText(t *testing.T) {
 }
 
 func TestMinifyJson(t *testing.T) {
-	t.Parallel()
 	router := newTestRouter()
 
 	router.GET("/", func(c *gin.Context) {
@@ -98,7 +96,6 @@ func TestMinifyJson(t *testing.T) {
 }
 
 func TestMinifyHtml(t *testing.T) {
-	t.Parallel()
 	router := newTestRouter()
 
 	router.GET("/", func(c *gin.Context) {
@@ -126,7 +123,6 @@ func TestMinifyHtml(t *testing.T) {
 }
 
 func TestMinifyInvalidJson(t *testing.T) {
-	t.Parallel()
 	router := newTestRouter()
 
 	invalidJSON := `{"invalid": true, "missing": value}`
@@ -145,7 +141,6 @@ func TestMinifyInvalidJson(t *testing.T) {
 }
 
 func TestMinifyUnsupportedContentType(t *testing.T) {
-	t.Parallel()
 	router := newTestRouter()
 
 	content := "some content"
@@ -164,8 +159,6 @@ func TestMinifyUnsupportedContentType(t *testing.T) {
 }
 
 func TestResponseWriterWrite(t *testing.T) {
-	t.Parallel()
-
 	buf := new(bytes.Buffer)
 	originalWriter := &mockWriter{
 		ResponseRecorder: httptest.NewRecorder(),

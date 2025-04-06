@@ -10,8 +10,6 @@ import (
 )
 
 func TestCspHeaders(t *testing.T) {
-	t.Parallel()
-
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.Use(CspHeaders())

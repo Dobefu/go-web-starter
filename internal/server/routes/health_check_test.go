@@ -3,6 +3,7 @@ package routes
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -61,8 +62,6 @@ func (m *MockDatabase) Begin() (*sql.Tx, error) {
 }
 
 func TestHealthCheckSuccess(t *testing.T) {
-	t.Parallel()
-
 	mockDB := new(MockDatabase)
 	mockDB.On("Ping").Return(nil)
 
@@ -90,11 +89,27 @@ func TestHealthCheckSuccess(t *testing.T) {
 	mockDB.AssertExpectations(t)
 }
 
-func TestHealthCheckDatabaseError(t *testing.T) {
-	t.Parallel()
+func TestHealthCheckNoDatabase(t *testing.T) {
+	router := gin.New()
+	router.GET("/health", HealthCheck)
 
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/health", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response map[string]any
+	err := json.NewDecoder(w.Body).Decode(&response)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "error", response["status"])
+	assert.Equal(t, "Database connection not found", response["error"])
+}
+
+func TestHealthCheckDatabaseError(t *testing.T) {
 	mockDB := new(MockDatabase)
-	mockDB.On("Ping").Return(assert.AnError)
+	mockDB.On("Ping").Return(fmt.Errorf("database error"))
 
 	router := gin.New()
 
@@ -111,7 +126,7 @@ func TestHealthCheckDatabaseError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var response map[string]interface{}
+	var response map[string]any
 	err := json.NewDecoder(w.Body).Decode(&response)
 	assert.NoError(t, err)
 
@@ -121,33 +136,11 @@ func TestHealthCheckDatabaseError(t *testing.T) {
 	mockDB.AssertExpectations(t)
 }
 
-func TestHealthCheckNoDatabase(t *testing.T) {
-	t.Parallel()
-
-	router := gin.New()
-	router.GET("/health", HealthCheck)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health", nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-
-	var response map[string]interface{}
-	err := json.NewDecoder(w.Body).Decode(&response)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "error", response["status"])
-	assert.Equal(t, "Database connection not found", response["error"])
-}
-
 func TestHealthCheckInvalidDatabaseType(t *testing.T) {
-	t.Parallel()
-
 	router := gin.New()
 
 	router.Use(func(c *gin.Context) {
-		c.Set("db", "not a database")
+		c.Set("db", "invalid")
 		c.Next()
 	})
 
@@ -159,7 +152,7 @@ func TestHealthCheckInvalidDatabaseType(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var response map[string]interface{}
+	var response map[string]any
 	err := json.NewDecoder(w.Body).Decode(&response)
 	assert.NoError(t, err)
 

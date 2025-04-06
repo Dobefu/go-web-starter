@@ -7,8 +7,6 @@ import (
 )
 
 func TestRegisterSuccess(t *testing.T) {
-	t.Parallel()
-
 	router := gin.New()
 
 	RegisterRoutes(router)
