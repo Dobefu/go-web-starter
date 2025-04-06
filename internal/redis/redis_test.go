@@ -30,7 +30,7 @@ func (m *MockRedis) Get(ctx context.Context, key string) (*redisClient.StringCmd
 	return args.Get(0).(*redisClient.StringCmd), args.Error(1)
 }
 
-func (m *MockRedis) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) (*redisClient.StatusCmd, error) {
+func (m *MockRedis) Set(ctx context.Context, key string, value any, expiration time.Duration) (*redisClient.StatusCmd, error) {
 	args := m.Called(ctx, key, value, expiration)
 
 	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
@@ -78,8 +78,8 @@ func (s *RedisTestSuite) testUninitializedRedis(operation func(*Redis) error) {
 func (s *RedisTestSuite) testRedisOperation(
 	name string,
 	mockSetup func(),
-	mockOperation func() (interface{}, error),
-	realOperation func() (interface{}, error),
+	mockOperation func() (any, error),
+	realOperation func() (any, error),
 	expectNilResult bool,
 ) {
 	s.Run(name, func() {
@@ -107,8 +107,8 @@ func (s *RedisTestSuite) TestRedisOperations() {
 	s.testRedisOperation(
 		"Close",
 		func() { s.mockRedis.On("Close").Return(nil) },
-		func() (interface{}, error) { return nil, s.mockRedis.Close() },
-		func() (interface{}, error) { return nil, s.realRedis.Close() },
+		func() (any, error) { return nil, s.mockRedis.Close() },
+		func() (any, error) { return nil, s.realRedis.Close() },
 		true,
 	)
 
@@ -120,8 +120,8 @@ func (s *RedisTestSuite) TestRedisOperations() {
 	s.testRedisOperation(
 		"Get",
 		func() { s.mockRedis.On("Get", s.ctx, key).Return(mockStringCmd, nil) },
-		func() (interface{}, error) { return s.mockRedis.Get(s.ctx, key) },
-		func() (interface{}, error) { return s.realRedis.Get(s.ctx, key) },
+		func() (any, error) { return s.mockRedis.Get(s.ctx, key) },
+		func() (any, error) { return s.realRedis.Get(s.ctx, key) },
 		false,
 	)
 
@@ -134,8 +134,8 @@ func (s *RedisTestSuite) TestRedisOperations() {
 	s.testRedisOperation(
 		"Set",
 		func() { s.mockRedis.On("Set", s.ctx, key, value, expiration).Return(mockStatusCmd, nil) },
-		func() (interface{}, error) { return s.mockRedis.Set(s.ctx, key, value, expiration) },
-		func() (interface{}, error) { return s.realRedis.Set(s.ctx, key, value, expiration) },
+		func() (any, error) { return s.mockRedis.Set(s.ctx, key, value, expiration) },
+		func() (any, error) { return s.realRedis.Set(s.ctx, key, value, expiration) },
 		false,
 	)
 	s.testUninitializedRedis(func(r *Redis) error { _, err := r.Set(s.ctx, key, value, expiration); return err })
@@ -145,8 +145,8 @@ func (s *RedisTestSuite) TestRedisOperations() {
 	s.testRedisOperation(
 		"GetRange",
 		func() { s.mockRedis.On("GetRange", s.ctx, key, start, end).Return(mockStringCmd, nil) },
-		func() (interface{}, error) { return s.mockRedis.GetRange(s.ctx, key, start, end) },
-		func() (interface{}, error) { return s.realRedis.GetRange(s.ctx, key, start, end) },
+		func() (any, error) { return s.mockRedis.GetRange(s.ctx, key, start, end) },
+		func() (any, error) { return s.realRedis.GetRange(s.ctx, key, start, end) },
 		false,
 	)
 	s.testUninitializedRedis(func(r *Redis) error { _, err := r.GetRange(s.ctx, key, start, end); return err })
@@ -157,8 +157,8 @@ func (s *RedisTestSuite) TestRedisOperations() {
 	s.testRedisOperation(
 		"SetRange",
 		func() { s.mockRedis.On("SetRange", s.ctx, key, offset, value).Return(mockIntCmd, nil) },
-		func() (interface{}, error) { return s.mockRedis.SetRange(s.ctx, key, offset, value) },
-		func() (interface{}, error) { return s.realRedis.SetRange(s.ctx, key, offset, value) },
+		func() (any, error) { return s.mockRedis.SetRange(s.ctx, key, offset, value) },
+		func() (any, error) { return s.realRedis.SetRange(s.ctx, key, offset, value) },
 		false,
 	)
 
