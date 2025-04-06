@@ -1,0 +1,27 @@
+{{ define "components/atoms/heading" }}
+  {{ $classes := "font-medium" }}
+
+  {{ if eq .Level 1 }}
+    <h1 class="{{ $classes }} text-4xl">{{ .Text }}</h1>
+  {{ end }}
+
+  {{ if eq .Level 2 }}
+    <h2 class="{{ $classes }} text-3xl">{{ .Text }}</h2>
+  {{ end }}
+
+  {{ if eq .Level 3 }}
+    <h3 class="{{ $classes }} text-2xl">{{ .Text }}</h3>
+  {{ end }}
+
+  {{ if eq .Level 4 }}
+    <h4 class="{{ $classes }} text-xl">{{ .Text }}</h4>
+  {{ end }}
+
+  {{ if eq .Level 5 }}
+    <h5 class="{{ $classes }} text-lg">{{ .Text }}</h5>
+  {{ end }}
+
+  {{ if eq .Level 6 }}
+    <h6 class="{{ $classes }} text-md">{{ .Text }}</h6>
+  {{ end }}
+{{ end }}
