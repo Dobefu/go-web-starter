@@ -140,3 +140,29 @@ func TestHealthCheckNoDatabase(t *testing.T) {
 	assert.Equal(t, "error", response["status"])
 	assert.Equal(t, "Database connection not found", response["error"])
 }
+
+func TestHealthCheckInvalidDatabaseType(t *testing.T) {
+	t.Parallel()
+
+	router := gin.New()
+
+	router.Use(func(c *gin.Context) {
+		c.Set("db", "not a database")
+		c.Next()
+	})
+
+	router.GET("/health", HealthCheck)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/health", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response map[string]interface{}
+	err := json.NewDecoder(w.Body).Decode(&response)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "error", response["status"])
+	assert.Equal(t, "Invalid database connection type", response["error"])
+}
