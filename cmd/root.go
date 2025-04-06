@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -76,6 +77,16 @@ func initConfig() {
 	}
 
 	_ = viper.ReadInConfig()
+
+	if verbose > 0 {
+		level := logger.DebugLevel
+
+		if verbose >= 3 {
+			level = logger.TraceLevel
+		}
+
+		viper.Set("log.level", level)
+	}
 }
 
 func Execute() {

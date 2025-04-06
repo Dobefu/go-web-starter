@@ -42,7 +42,7 @@ func (l *Logger) WithRequestID(requestID string) *Logger {
 }
 
 func (l *Logger) log(level Level, msg string, fields Fields) {
-	if l.level != TraceLevel && level < l.level {
+	if level < l.level {
 		return
 	}
 
