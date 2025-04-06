@@ -22,7 +22,9 @@ func Minify() gin.HandlerFunc {
 	textHtmlMime := "text/html"
 
 	m := minify.New()
-	m.AddFunc(textHtmlMime, html.Minify)
+	m.Add(textHtmlMime, &html.Minifier{
+		KeepDocumentTags: true,
+	})
 
 	return func(c *gin.Context) {
 		buf := new(bytes.Buffer)
