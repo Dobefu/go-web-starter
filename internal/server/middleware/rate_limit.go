@@ -164,6 +164,12 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 }
 
 func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
+	if !config.DefaultConfig.Redis.Enable {
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+
 	limiter, err := NewRateLimiter(capacity, rate)
 
 	if err != nil {
