@@ -17,6 +17,7 @@ type RedisInterface interface {
 	Set(ctx context.Context, key string, value any, expiration time.Duration) (*redisClient.StatusCmd, error)
 	GetRange(ctx context.Context, key string, start, end int64) (*redisClient.StringCmd, error)
 	SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error)
+	FlushDB(ctx context.Context) (*redisClient.StatusCmd, error)
 }
 
 // Redis implements RedisInterface
@@ -78,4 +79,12 @@ func (d *Redis) SetRange(ctx context.Context, key string, offset int64, value st
 	}
 
 	return d.db.SetRange(ctx, key, offset, value), nil
+}
+
+func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
+	if d.db == nil {
+		return nil, errNotInitialized
+	}
+
+	return d.db.FlushDB(ctx), nil
 }
