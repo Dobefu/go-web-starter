@@ -10,6 +10,7 @@ import (
 	redisClient "github.com/redis/go-redis/v9"
 )
 
+// RedisInterface defines the interface for Redis operations with error handling
 type RedisInterface interface {
 	Close() error
 	Get(ctx context.Context, key string) (*redisClient.StringCmd, error)
@@ -18,6 +19,7 @@ type RedisInterface interface {
 	SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error)
 }
 
+// Redis implements RedisInterface
 type Redis struct {
 	db     *redisClient.Client
 	logger *logger.Logger
