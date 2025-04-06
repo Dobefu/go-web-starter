@@ -75,6 +75,16 @@ func (m *MockRedis) SetRange(ctx context.Context, key string, offset int64, valu
 	return args.Get(0).(*redisClient.IntCmd), args.Error(1)
 }
 
+func (m *MockRedis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
+	args := m.Called(ctx)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
+}
+
 func setupMockRedis(tokens int, redisErr error, now time.Time) (*MockRedis, *RateLimiter) {
 	mockRedis := new(MockRedis)
 	mockRedis.tokens = tokens
