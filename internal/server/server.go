@@ -53,6 +53,7 @@ func defaultNew(port int) ServerInterface {
 	if gin.Mode() != gin.TestMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
 	router := gin.New()
 
 	router.SetFuncMap(server_utils.TemplateFuncMap())
