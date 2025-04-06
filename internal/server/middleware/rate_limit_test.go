@@ -354,25 +354,39 @@ func TestRateLimit(t *testing.T) {
 	originalNew := redis.New
 	defer func() { redis.New = originalNew }()
 
+	originalConfig := config.DefaultConfig
+	defer func() { config.DefaultConfig = originalConfig }()
+
 	tests := []struct {
 		name         string
 		redisError   error
+		redisEnabled bool
 		expectedCode int
 	}{
 		{
 			name:         "successful creation",
 			redisError:   nil,
+			redisEnabled: true,
 			expectedCode: http.StatusOK,
 		},
 		{
 			name:         "redis error",
 			redisError:   errors.New("redis connection error"),
+			redisEnabled: true,
 			expectedCode: 0,
+		},
+		{
+			name:         "redis disabled",
+			redisError:   nil,
+			redisEnabled: false,
+			expectedCode: http.StatusOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			config.DefaultConfig.Redis.Enable = tt.redisEnabled
+
 			redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
 				if tt.redisError != nil {
 					return nil, tt.redisError
