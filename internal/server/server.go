@@ -9,6 +9,7 @@ import (
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/Dobefu/go-web-starter/internal/redis"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
@@ -28,6 +29,7 @@ type Server struct {
 	router Router
 	port   int
 	db     database.DatabaseInterface
+	redis  redis.RedisInterface
 }
 
 // routerWrapper combines the Router interface with Gin's IRouter to maintain
@@ -46,6 +48,16 @@ func getDatabaseConfig() config.Database {
 		User:     viper.GetString("database.user"),
 		Password: viper.GetString("database.password"),
 		DBName:   viper.GetString("database.dbname"),
+	}
+}
+
+func getRedisConfig() config.Redis {
+	return config.Redis{
+		Enable:   viper.GetBool("redis.enable"),
+		Host:     viper.GetString("redis.host"),
+		Port:     viper.GetInt("redis.port"),
+		Password: viper.GetString("redis.password"),
+		DB:       viper.GetInt("redis.db"),
 	}
 }
 
@@ -79,16 +91,32 @@ func defaultNew(port int) ServerInterface {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
 	}
 
+	redisConfig := getRedisConfig()
+	var redisClient redis.RedisInterface
+
+	if redisConfig.Enable {
+		redisClient, err = redis.New(redisConfig, nil)
+
+		if err != nil {
+			panic(fmt.Sprintf("Failed to initialize Redis: %v", err))
+		}
+	}
+
 	srv := &Server{
 		router: &routerWrapper{
 			Router:  router,
 			IRouter: router,
 		},
-		port: port,
-		db:   db,
+		port:  port,
+		db:    db,
+		redis: redisClient,
 	}
 
 	router.Use(middleware.Database(srv.db))
+
+	if srv.redis != nil {
+		router.Use(middleware.Redis(srv.redis))
+	}
 
 	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
@@ -110,7 +138,13 @@ func (srv *Server) registerRoutes() {
 func (srv *Server) Start() error {
 	addr := fmt.Sprintf(":%d", srv.port)
 
-	defer func() { _ = srv.db.Close() }()
+	defer func() {
+		_ = srv.db.Close()
+
+		if srv.redis != nil {
+			_ = srv.redis.Close()
+		}
+	}()
 	return srv.router.Run(addr)
 }
 
