@@ -48,7 +48,7 @@ func Minify() gin.HandlerFunc {
 		minified, err := m.String(contentType, buf.String())
 
 		if err != nil {
-			originalWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(buf.Bytes())))
+			// When minification fails, return the original content
 			_, _ = originalWriter.Write(buf.Bytes())
 			return
 		}
