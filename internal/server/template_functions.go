@@ -26,5 +26,8 @@ func TemplateFuncMap() template.FuncMap {
 
 			return dict
 		},
+		"raw": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 	}
 }
