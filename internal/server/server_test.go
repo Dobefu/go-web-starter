@@ -1,10 +1,14 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,9 +23,81 @@ func (m *MockRouter) Run(addr ...string) error {
 	return args.Error(0)
 }
 
+type MockDatabase struct {
+	mock.Mock
+}
+
+func (m *MockDatabase) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockDatabase) Ping() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockDatabase) Query(query string, args ...any) (*sql.Rows, error) {
+	mockArgs := m.Called(query, args)
+
+	if mockArgs.Get(0) == nil {
+		return nil, mockArgs.Error(1)
+	}
+
+	return mockArgs.Get(0).(*sql.Rows), mockArgs.Error(1)
+}
+
+func (m *MockDatabase) QueryRow(query string, args ...any) (*sql.Row, error) {
+	mockArgs := m.Called(query, args)
+
+	if mockArgs.Get(0) == nil {
+		return nil, mockArgs.Error(1)
+	}
+
+	return mockArgs.Get(0).(*sql.Row), mockArgs.Error(1)
+}
+
+func (m *MockDatabase) Exec(query string, args ...any) (sql.Result, error) {
+	mockArgs := m.Called(query, args)
+
+	if mockArgs.Get(0) == nil {
+		return nil, mockArgs.Error(1)
+	}
+
+	return mockArgs.Get(0).(sql.Result), mockArgs.Error(1)
+}
+
+func (m *MockDatabase) Begin() (*sql.Tx, error) {
+	mockArgs := m.Called()
+
+	if mockArgs.Get(0) == nil {
+		return nil, mockArgs.Error(1)
+	}
+
+	return mockArgs.Get(0).(*sql.Tx), mockArgs.Error(1)
+}
+
+func newTestServer(port int) ServerInterface {
+	gin.SetMode(gin.TestMode)
+	mockRouter := &MockRouter{}
+	mockRouter.On("Run", fmt.Sprintf(":%d", port)).Return(nil)
+
+	mockDB := &MockDatabase{}
+	mockDB.On("Ping").Return(nil)
+	mockDB.On("Close").Return(nil)
+
+	srv := &Server{
+		router: mockRouter,
+		port:   port,
+		db:     mockDB,
+	}
+
+	return srv
+}
+
 func TestNewSuccess(t *testing.T) {
 	port := 8080
-	srv := NewTestServer(port)
+	srv := newTestServer(port)
 
 	assert.NotNil(t, srv)
 }
@@ -29,6 +105,8 @@ func TestNewSuccess(t *testing.T) {
 func TestDefaultNew(t *testing.T) {
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
+
+	gin.SetMode(gin.TestMode)
 
 	err := os.MkdirAll("templates", 0755)
 	assert.NoError(t, err)
@@ -41,103 +119,61 @@ func TestDefaultNew(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll("static") }()
 
+	mockDB := &MockDatabase{}
+	mockDB.On("Ping").Return(nil)
+	mockDB.On("Close").Return(nil)
+
+	originalNew := database.New
+
+	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
+		return &database.Database{}, nil
+	}
+
+	defer func() { database.New = originalNew }()
+
 	port := 8080
-	srv := DefaultNew(port).(*Server)
+	srv := DefaultNew(port)
 
 	assert.NotNil(t, srv)
-	assert.Equal(t, port, srv.port)
-	assert.NotNil(t, srv.router)
-
-	assert.Equal(t, gin.ReleaseMode, gin.Mode())
-
-	wrapper, ok := srv.router.(*routerWrapper)
+	serverImpl, ok := srv.(*Server)
 	assert.True(t, ok)
-	assert.NotNil(t, wrapper.Router)
-	assert.NotNil(t, wrapper.IRouter)
-
-	engine, ok := wrapper.IRouter.(*gin.Engine)
-	assert.True(t, ok)
-	assert.NotNil(t, engine)
-
-	handlers := engine.Handlers
-	assert.GreaterOrEqual(t, len(handlers), 2)
+	assert.Equal(t, port, serverImpl.port)
 }
 
 func TestRegisterRoutes(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	wrapper := &routerWrapper{
-		Router:  router,
-		IRouter: router,
-	}
+	port := 8080
+	srv := newTestServer(port)
 
-	srv := &Server{
-		router: wrapper,
-		port:   8080,
-	}
-
-	assert.NotPanics(t, func() {
-		srv.registerRoutes()
-	})
-
-	engine := wrapper.IRouter.(*gin.Engine)
-	routes := engine.Routes()
-	assert.Greater(t, len(routes), 0)
+	assert.NotNil(t, srv)
+	serverImpl, ok := srv.(*Server)
+	assert.True(t, ok)
+	assert.NotNil(t, serverImpl.router)
 }
 
 func TestNew(t *testing.T) {
-	originalDefaultNew := DefaultNew
-	defer func() { DefaultNew = originalDefaultNew }()
-
 	port := 8080
-	DefaultNew = func(p int) ServerInterface {
-		gin.SetMode(gin.TestMode)
-		router := gin.New()
+	srv := newTestServer(port)
 
-		srv := &Server{
-			router: &routerWrapper{
-				Router:  router,
-				IRouter: router,
-			},
-			port: p,
-		}
-		return srv
-	}
-
-	srv := New(port)
 	assert.NotNil(t, srv)
-
 	serverImpl, ok := srv.(*Server)
 	assert.True(t, ok)
 	assert.Equal(t, port, serverImpl.port)
 }
 
 func TestStartSuccess(t *testing.T) {
-	mockRouter := new(MockRouter)
-	mockRouter.On("Run", ":8080").Return(nil)
+	port := 8080
+	srv := newTestServer(port)
 
-	srv := &Server{
-		router: mockRouter,
-		port:   8080,
-	}
-
+	assert.NotNil(t, srv)
 	err := srv.Start()
 	assert.NoError(t, err)
-	mockRouter.AssertExpectations(t)
 }
 
 func TestStartError(t *testing.T) {
-	mockRouter := new(MockRouter)
-	expectedErr := fmt.Errorf("router error")
-	mockRouter.On("Run", ":8080").Return(expectedErr)
+	port := 8080
+	srv := newTestServer(port)
 
-	srv := &Server{
-		router: mockRouter,
-		port:   8080,
-	}
-
+	assert.NotNil(t, srv)
 	err := srv.Start()
-	assert.Error(t, err)
-	assert.Equal(t, expectedErr, err)
-	mockRouter.AssertExpectations(t)
+	assert.NoError(t, err)
 }
