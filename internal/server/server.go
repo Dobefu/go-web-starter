@@ -78,13 +78,6 @@ func defaultNew(port int) ServerInterface {
 	router.LoadHTMLFiles(templates...)
 	router.Static("/static", "./static")
 
-	router.Use(middleware.Logger())
-	router.Use(gin.Recovery())
-	router.Use(middleware.RateLimit(1000, time.Minute))
-	router.Use(middleware.CorsHeaders())
-	router.Use(middleware.CspHeaders())
-	router.Use(middleware.Minify())
-
 	dbConfig := getDatabaseConfig()
 	db, err := database.New(dbConfig, nil)
 	if err != nil {
@@ -117,6 +110,13 @@ func defaultNew(port int) ServerInterface {
 	if srv.redis != nil {
 		router.Use(middleware.Redis(srv.redis))
 	}
+
+	router.Use(middleware.Logger())
+	router.Use(gin.Recovery())
+	router.Use(middleware.RateLimit(1000, time.Minute))
+	router.Use(middleware.CorsHeaders())
+	router.Use(middleware.CspHeaders())
+	router.Use(middleware.Minify())
 
 	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
