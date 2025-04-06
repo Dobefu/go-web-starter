@@ -10,7 +10,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMinifyNoHTML(t *testing.T) {
+func TestMinifyText(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(Minify())
+
+	router.GET("/", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/plain", []byte(" some     text"))
+	})
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/", nil)
+	assert.NoError(t, err)
+	router.ServeHTTP(w, req)
+
+	body, err := io.ReadAll(w.Body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, " some     text", string(body))
+}
+
+func TestMinifyJson(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
@@ -29,10 +51,10 @@ func TestMinifyNoHTML(t *testing.T) {
 	body, err := io.ReadAll(w.Body)
 	assert.NoError(t, err)
 
-	assert.Equal(t, ` { "testing": true } `, string(body))
+	assert.Equal(t, `{"testing":true}`, string(body))
 }
 
-func TestMinifySuccess(t *testing.T) {
+func TestMinifyHtml(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)

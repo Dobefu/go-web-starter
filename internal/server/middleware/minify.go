@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/html"
+	"github.com/tdewolff/minify/v2/json"
 )
 
 type ResponseWriter struct {
@@ -21,6 +22,7 @@ func (w *ResponseWriter) Write(b []byte) (int, error) {
 func Minify() gin.HandlerFunc {
 	m := minify.New()
 	m.Add("text/html", &html.Minifier{KeepDocumentTags: true})
+	m.Add("application/json", &json.Minifier{})
 
 	return func(c *gin.Context) {
 		buf := new(bytes.Buffer)
