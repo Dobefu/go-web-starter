@@ -7,10 +7,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 type Router interface {
@@ -24,6 +27,7 @@ type ServerInterface interface {
 type Server struct {
 	router Router
 	port   int
+	db     database.DatabaseInterface
 }
 
 // routerWrapper combines the Router interface with Gin's IRouter to maintain
@@ -35,8 +39,20 @@ type routerWrapper struct {
 
 type NewServerFunc func(port int) ServerInterface
 
+func getDatabaseConfig() config.Database {
+	return config.Database{
+		Host:     viper.GetString("database.host"),
+		Port:     viper.GetInt("database.port"),
+		User:     viper.GetString("database.user"),
+		Password: viper.GetString("database.password"),
+		DBName:   viper.GetString("database.dbname"),
+	}
+}
+
 func defaultNew(port int) ServerInterface {
-	gin.SetMode(gin.ReleaseMode)
+	if gin.Mode() != gin.TestMode {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.New()
 
 	router.SetFuncMap(server_utils.TemplateFuncMap())
@@ -56,13 +72,22 @@ func defaultNew(port int) ServerInterface {
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.Minify())
 
+	dbConfig := getDatabaseConfig()
+	db, err := database.New(dbConfig, nil)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize database: %v", err))
+	}
+
 	srv := &Server{
 		router: &routerWrapper{
 			Router:  router,
 			IRouter: router,
 		},
 		port: port,
+		db:   db,
 	}
+
+	router.Use(middleware.Database(srv.db))
 
 	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
@@ -70,31 +95,6 @@ func defaultNew(port int) ServerInterface {
 }
 
 var DefaultNew NewServerFunc = defaultNew
-
-func NewTestServer(port int) ServerInterface {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	router.SetFuncMap(server_utils.TemplateFuncMap())
-
-	router.Use(gin.Recovery())
-	router.Use(middleware.RateLimit(1000, time.Minute))
-	router.Use(middleware.CorsHeaders())
-	router.Use(middleware.CspHeaders())
-	router.Use(middleware.Minify())
-
-	srv := &Server{
-		router: &routerWrapper{
-			Router:  router,
-			IRouter: router,
-		},
-		port: port,
-	}
-
-	router.NoRoute(routes.NotFound)
-	srv.registerRoutes()
-	return srv
-}
 
 func New(port int) ServerInterface {
 	return DefaultNew(port)
@@ -109,6 +109,7 @@ func (srv *Server) registerRoutes() {
 func (srv *Server) Start() error {
 	addr := fmt.Sprintf(":%d", srv.port)
 
+	defer func() { _ = srv.db.Close() }()
 	return srv.router.Run(addr)
 }
 
