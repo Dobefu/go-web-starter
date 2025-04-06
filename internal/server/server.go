@@ -38,6 +38,7 @@ func defaultNew(port int) ServerInterface {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
+	router.SetFuncMap(TemplateFuncMap())
 	templates, err := loadTemplates("templates", 0)
 
 	if err != nil {
@@ -72,6 +73,8 @@ var DefaultNew NewServerFunc = defaultNew
 func NewTestServer(port int) ServerInterface {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+
+	router.SetFuncMap(TemplateFuncMap())
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimit(1000, time.Minute))
