@@ -63,7 +63,7 @@ func TestMinifySuccess(t *testing.T) {
 
 	assert.Equal(
 		t,
-		"<!doctype html><html lang=en><meta charset=UTF-8><p>Some paragraph",
+		"<!doctype html><html lang=en><head><meta charset=UTF-8></head><body><p>Some paragraph</body></html>",
 		string(body),
 	)
 }

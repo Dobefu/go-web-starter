@@ -19,12 +19,8 @@ func (w *ResponseWriter) Write(b []byte) (int, error) {
 }
 
 func Minify() gin.HandlerFunc {
-	textHtmlMime := "text/html"
-
 	m := minify.New()
-	m.Add(textHtmlMime, &html.Minifier{
-		KeepDocumentTags: true,
-	})
+	m.Add("text/html", &html.Minifier{KeepDocumentTags: true})
 
 	return func(c *gin.Context) {
 		buf := new(bytes.Buffer)
@@ -39,19 +35,23 @@ func Minify() gin.HandlerFunc {
 		c.Next()
 
 		contentType := originalWriter.Header().Get("Content-Type")
-		if contentType == textHtmlMime || contentType == "text/html; charset=utf-8" {
-			minified, err := m.String(textHtmlMime, buf.String())
+		_, _, minifierFunc := m.Match(contentType)
 
-			if err != nil {
-				c.Data(originalWriter.Status(), contentType, buf.Bytes())
-				return
-			}
-
-			minifiedBytes := []byte(minified)
-			originalWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(minifiedBytes)))
-			_, _ = originalWriter.Write(minifiedBytes)
-		} else {
+		// If there's no corresponding minify function, return the original data.
+		if minifierFunc == nil {
 			_, _ = originalWriter.Write(buf.Bytes())
+			return
 		}
+
+		minified, err := m.String(contentType, buf.String())
+
+		if err != nil {
+			c.Data(originalWriter.Status(), contentType, buf.Bytes())
+			return
+		}
+
+		minifiedBytes := []byte(minified)
+		originalWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(minifiedBytes)))
+		_, _ = originalWriter.Write(minifiedBytes)
 	}
 }
