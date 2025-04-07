@@ -6,16 +6,16 @@ import (
 )
 
 func TestDict(t *testing.T) {
-	dict := TemplateFuncMap()["dict"].(func(...interface{}) map[string]interface{})
+	dict := TemplateFuncMap()["dict"].(func(...any) map[string]any)
 
 	tests := []struct {
 		name string
-		args []interface{}
-		want map[string]interface{}
+		args []any
+		want map[string]any
 	}{
-		{"valid", []interface{}{"key1", "value1", "key2", 42}, map[string]interface{}{"key1": "value1", "key2": 42}},
-		{"odd args", []interface{}{"key1", "value1", "key2"}, nil},
-		{"non-string key", []interface{}{123, "value1", "key2", "value2"}, map[string]interface{}{"key2": "value2"}},
+		{"valid", []any{"key1", "value1", "key2", 42}, map[string]any{"key1": "value1", "key2": 42}},
+		{"odd args", []any{"key1", "value1", "key2"}, nil},
+		{"non-string key", []any{123, "value1", "key2", "value2"}, map[string]any{"key2": "value2"}},
 	}
 
 	for _, tt := range tests {
