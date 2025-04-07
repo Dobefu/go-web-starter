@@ -1,3 +1,7 @@
 {{ define "components/layout/footer" }}
-  <footer class="p-4 text-center">FOOTER</footer>
+  <footer class="p-4 text-center">
+    Copyright &copy;
+    {{ .Year }}
+    {{ .SiteName }}
+  </footer>
 {{ end }}
