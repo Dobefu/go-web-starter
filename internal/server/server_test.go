@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -177,14 +176,7 @@ func TestDefaultNew(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	err := os.MkdirAll("templates", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("templates") }()
-
-	err = os.WriteFile("templates/index.html", []byte("{{define \"index\"}}test{{end}}"), 0644)
-	assert.NoError(t, err)
-
-	err = os.MkdirAll("static", 0755)
+	err := os.MkdirAll("static", 0755)
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll("static") }()
 
@@ -236,14 +228,7 @@ func TestDefaultNewErrors(t *testing.T) {
 
 	gin.SetMode(gin.ReleaseMode)
 
-	err := os.MkdirAll("templates", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("templates") }()
-
-	err = os.WriteFile("templates/index.html", []byte("{{define \"index\"}}test{{end}}"), 0644)
-	assert.NoError(t, err)
-
-	err = os.MkdirAll("static", 0755)
+	err := os.MkdirAll("static", 0755)
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll("static") }()
 
@@ -263,21 +248,70 @@ func TestDefaultNewErrors(t *testing.T) {
 	_ = defaultNew(8080)
 }
 
-func TestDefaultNewTemplateError(t *testing.T) {
+func TestDefaultNewRedisError(t *testing.T) {
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
 
 	gin.SetMode(gin.TestMode)
 
-	_ = os.RemoveAll("templates")
+	err := os.MkdirAll("static", 0755)
+	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll("static") }()
+
+	originalNew := database.New
+	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
+		return &database.Database{}, nil
+	}
+	defer func() { database.New = originalNew }()
+
+	originalRedisNew := redis.New
+
+	redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
+		return nil, fmt.Errorf("redis error")
+	}
+
+	defer func() { redis.New = originalRedisNew }()
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("Expected panic from template error")
+			t.Error("Expected panic from Redis error")
 		}
 	}()
 
 	_ = defaultNew(8080)
+}
+
+func TestDefaultNewRedisDisabled(t *testing.T) {
+	originalMode := gin.Mode()
+	defer gin.SetMode(originalMode)
+
+	gin.SetMode(gin.TestMode)
+
+	err := os.MkdirAll("static", 0755)
+	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll("static") }()
+
+	originalNew := database.New
+
+	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
+		return &database.Database{}, nil
+	}
+
+	defer func() { database.New = originalNew }()
+
+	viper.Set("redis.enable", false)
+	defer viper.Set("redis.enable", true)
+
+	port := 8080
+	srv := defaultNew(port)
+
+	assert.NotNil(t, srv)
+	serverImpl, ok := srv.(*Server)
+	assert.True(t, ok)
+	assert.Equal(t, port, serverImpl.port)
+	assert.NotNil(t, serverImpl.router)
+	assert.NotNil(t, serverImpl.db)
+	assert.Nil(t, serverImpl.redis)
 }
 
 func TestGetDatabaseConfig(t *testing.T) {
@@ -312,87 +346,6 @@ func TestGetRedisConfig(t *testing.T) {
 	assert.Equal(t, 0, config.DB)
 }
 
-func TestLoadTemplates(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "templates")
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll(tempDir) }()
-
-	subDir := filepath.Join(tempDir, "subdir")
-	err = os.MkdirAll(subDir, 0755)
-	assert.NoError(t, err)
-
-	files := []string{
-		filepath.Join(tempDir, "index.html"),
-		filepath.Join(subDir, "about.html"),
-	}
-
-	for _, file := range files {
-		err = os.WriteFile(file, []byte("{{define \"test\"}}test{{end}}"), 0644)
-		assert.NoError(t, err)
-	}
-
-	templates, err := loadTemplates(tempDir, 0)
-	assert.NoError(t, err)
-	assert.Len(t, templates, 2)
-	assert.Contains(t, templates, files[0])
-	assert.Contains(t, templates, files[1])
-
-	_, err = loadTemplates(tempDir, 11)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "max recursion depth of 10 exceeded")
-
-	_, err = loadTemplates("/non/existent/path", 0)
-	assert.Error(t, err)
-
-	err = os.RemoveAll(files[0])
-	assert.NoError(t, err)
-	err = os.Symlink("/non/existent/target", files[0])
-	assert.NoError(t, err)
-	_, err = loadTemplates(tempDir, 0)
-	assert.Error(t, err)
-
-	deepDir := tempDir
-
-	for i := 0; i < 11; i++ {
-		deepDir = filepath.Join(deepDir, fmt.Sprintf("level%d", i))
-		err = os.MkdirAll(deepDir, 0755)
-		assert.NoError(t, err)
-	}
-
-	templateFile := filepath.Join(deepDir, "template.html")
-	err = os.WriteFile(templateFile, []byte("{{define \"test\"}}test{{end}}"), 0644)
-	assert.NoError(t, err)
-
-	_, err = loadTemplates(tempDir, 0)
-	assert.Error(t, err)
-
-	recursiveDir, err := os.MkdirTemp("", "templates3")
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll(recursiveDir) }()
-
-	subDir3 := filepath.Join(recursiveDir, "subdir3")
-	err = os.MkdirAll(subDir3, 0755)
-	assert.NoError(t, err)
-
-	brokenLink := filepath.Join(subDir3, "broken.html")
-	err = os.Symlink("/non/existent/target", brokenLink)
-	assert.NoError(t, err)
-
-	_, err = loadTemplates(recursiveDir, 0)
-	assert.Error(t, err)
-
-	finalDir, err := os.MkdirTemp("", "templates4")
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll(finalDir) }()
-
-	brokenLink = filepath.Join(finalDir, "broken.html")
-	err = os.Symlink("/non/existent/target", brokenLink)
-	assert.NoError(t, err)
-
-	_, err = loadTemplates(finalDir, 0)
-	assert.Error(t, err)
-}
-
 func TestStart(t *testing.T) {
 	port := 8080
 	srv := newTestServer(port)
@@ -400,84 +353,4 @@ func TestStart(t *testing.T) {
 	assert.NotNil(t, srv)
 	err := srv.Start()
 	assert.NoError(t, err)
-}
-
-func TestDefaultNewRedisError(t *testing.T) {
-	originalMode := gin.Mode()
-	defer gin.SetMode(originalMode)
-
-	gin.SetMode(gin.TestMode)
-
-	err := os.MkdirAll("templates", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("templates") }()
-
-	err = os.WriteFile("templates/index.html", []byte("{{define \"index\"}}test{{end}}"), 0644)
-	assert.NoError(t, err)
-
-	err = os.MkdirAll("static", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("static") }()
-
-	originalNew := database.New
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return &database.Database{}, nil
-	}
-	defer func() { database.New = originalNew }()
-
-	originalRedisNew := redis.New
-
-	redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
-		return nil, fmt.Errorf("redis error")
-	}
-
-	defer func() { redis.New = originalRedisNew }()
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic from Redis error")
-		}
-	}()
-
-	_ = defaultNew(8080)
-}
-
-func TestDefaultNewRedisDisabled(t *testing.T) {
-	originalMode := gin.Mode()
-	defer gin.SetMode(originalMode)
-
-	gin.SetMode(gin.TestMode)
-
-	err := os.MkdirAll("templates", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("templates") }()
-
-	err = os.WriteFile("templates/index.html", []byte("{{define \"index\"}}test{{end}}"), 0644)
-	assert.NoError(t, err)
-
-	err = os.MkdirAll("static", 0755)
-	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll("static") }()
-
-	originalNew := database.New
-
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return &database.Database{}, nil
-	}
-
-	defer func() { database.New = originalNew }()
-
-	viper.Set("redis.enable", false)
-	defer viper.Set("redis.enable", true)
-
-	port := 8080
-	srv := defaultNew(port)
-
-	assert.NotNil(t, srv)
-	serverImpl, ok := srv.(*Server)
-	assert.True(t, ok)
-	assert.Equal(t, port, serverImpl.port)
-	assert.NotNil(t, serverImpl.router)
-	assert.NotNil(t, serverImpl.db)
-	assert.Nil(t, serverImpl.redis)
 }

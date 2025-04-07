@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
+	"github.com/Dobefu/go-web-starter/internal/templates"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,8 @@ func TestIndex(t *testing.T) {
 	router := gin.New()
 
 	router.SetFuncMap(server_utils.TemplateFuncMap())
-	router.LoadHTMLGlob("../../../templates/**/*.gohtml")
+	err := templates.LoadTemplates(router)
+	assert.NoError(t, err)
 	router.GET("/", Index)
 
 	w := httptest.NewRecorder()

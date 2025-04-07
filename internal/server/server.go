@@ -1,10 +1,7 @@
 package server
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
@@ -13,6 +10,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
+	"github.com/Dobefu/go-web-starter/internal/templates"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -67,15 +65,12 @@ func defaultNew(port int) ServerInterface {
 	}
 
 	router := gin.New()
-
 	router.SetFuncMap(server_utils.TemplateFuncMap())
-	templates, err := loadTemplates("templates", 0)
 
-	if err != nil {
-		panic(err)
+	if err := templates.LoadTemplates(router); err != nil {
+		panic(fmt.Sprintf("Failed to load templates: %v", err))
 	}
 
-	router.LoadHTMLFiles(templates...)
 	router.Static("/static", "./static")
 
 	dbConfig := getDatabaseConfig()
@@ -146,38 +141,4 @@ func (srv *Server) Start() error {
 		}
 	}()
 	return srv.router.Run(addr)
-}
-
-func loadTemplates(root string, depth int) (files []string, err error) {
-	if depth > 10 {
-		return files, errors.New("max recursion depth of 10 exceeded")
-	}
-
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		fileInfo, err := os.Stat(path)
-
-		if err != nil {
-			return err
-		}
-
-		if fileInfo.IsDir() {
-			if path != root {
-				_, err = loadTemplates(path, depth+1)
-
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			files = append(files, path)
-		}
-
-		return err
-	})
-
-	return files, err
 }
