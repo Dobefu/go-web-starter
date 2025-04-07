@@ -3,4 +3,4 @@ pnpm-lock.yaml
 package-lock.yml
 
 # Layout files (will cause a "Found invalid node root") error otherwise.
-templates/layouts/*.gohtml
+internal/templates/layouts/*.gohtml
