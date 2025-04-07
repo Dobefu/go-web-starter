@@ -43,7 +43,10 @@ func Minify() gin.HandlerFunc {
 		}
 
 		if cachedContent := getCachedContent(c, log); cachedContent != nil {
+			c.Writer.Header().Set("Content-Type", "text/html")
 			writeResponse(c, cachedContent, "HIT")
+			c.Abort()
+
 			return
 		}
 
