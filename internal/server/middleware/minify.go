@@ -158,7 +158,14 @@ func cacheMinifiedContent(c *gin.Context, minifiedBytes []byte, log *logger.Logg
 }
 
 func writeResponse(c *gin.Context, content []byte, cacheStatus string) {
-	originalWriter := c.Writer.(*ResponseWriter).ResponseWriter
+	var originalWriter gin.ResponseWriter
+
+	if rw, ok := c.Writer.(*ResponseWriter); ok {
+		originalWriter = rw.ResponseWriter
+	} else {
+		originalWriter = c.Writer
+	}
+
 	originalWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
 	originalWriter.Header().Set("X-Cache", cacheStatus)
 
