@@ -39,7 +39,7 @@ func TestLoadTemplates(t *testing.T) {
 func TestLoadTemplatesInvalidTemplate(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "invalid-templates")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	templateDir := filepath.Join(tmpDir, "templates")
 	err = os.MkdirAll(templateDir, 0755)

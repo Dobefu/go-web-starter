@@ -10,6 +10,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
+	"github.com/Dobefu/go-web-starter/internal/static"
 	"github.com/Dobefu/go-web-starter/internal/templates"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -71,10 +72,17 @@ func defaultNew(port int) ServerInterface {
 		panic(fmt.Sprintf("Failed to load templates: %v", err))
 	}
 
-	router.Static("/static", "./static")
+	staticFS, err := static.StaticFileSystem()
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize static file system: %v", err))
+	}
+
+	router.StaticFS("/static", staticFS)
 
 	dbConfig := getDatabaseConfig()
 	db, err := database.New(dbConfig, nil)
+
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
 	}

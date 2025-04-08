@@ -12,8 +12,8 @@ tmp/
 node_modules/
 
 # Built CSS files.
-static/css/dist/*
-!static/css/dist/.gitkeep
+internal/static/static/css/dist/*
+!internal/static/static/css/dist/.gitkeep
 
 # The config file for the application.
 config.toml
