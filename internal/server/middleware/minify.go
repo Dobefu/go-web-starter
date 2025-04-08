@@ -76,7 +76,7 @@ func getCachedContent(c *gin.Context, log *logger.Logger) []byte {
 	}
 
 	redis := redisClient.(redis.RedisInterface)
-	cacheKey := fmt.Sprintf("minify:%s:%s", c.Request.Method, c.Request.URL.Path)
+	cacheKey := fmt.Sprintf("minify:%s:%s:%s", config.BuildHash, c.Request.Method, c.Request.URL.Path)
 	ctx := context.Background()
 
 	cachedCmd, err := redis.Get(ctx, cacheKey)
@@ -131,12 +131,13 @@ func processResponse(c *gin.Context, m *minify.M, buf *bytes.Buffer, contentType
 
 func cacheMinifiedContent(c *gin.Context, minifiedBytes []byte, log *logger.Logger) {
 	redisClient, exists := c.Get("redis")
+
 	if !exists {
 		return
 	}
 
 	redis := redisClient.(redis.RedisInterface)
-	cacheKey := fmt.Sprintf("minify:%s:%s", c.Request.Method, c.Request.URL.Path)
+	cacheKey := fmt.Sprintf("minify:%s:%s:%s", config.BuildHash, c.Request.Method, c.Request.URL.Path)
 	ctx := context.Background()
 
 	_, err := redis.Set(ctx, cacheKey, minifiedBytes, time.Hour)
