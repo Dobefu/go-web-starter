@@ -8,7 +8,7 @@ import (
 )
 
 var BuildHash string
-var executablePath = os.Executable // For testing purposes
+var executablePath = os.Executable
 
 func init() {
 	BuildHash = generateBuildHash()
