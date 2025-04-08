@@ -8,33 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Dobefu/go-web-starter/internal/server/utils"
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed **/*.gohtml
+//go:embed components/**/*.gohtml layouts/*.gohtml pages/*.gohtml
 var TemplateFS embed.FS
-
-var templateFuncs = template.FuncMap{
-	"dict": func(values ...interface{}) (map[string]interface{}, error) {
-		if (len(values) % 2) != 0 {
-			return nil, nil
-		}
-
-		dict := make(map[string]interface{}, len(values)/2)
-
-		for i := 0; i < len(values); i += 2 {
-			key, ok := values[i].(string)
-
-			if !ok {
-				return nil, nil
-			}
-
-			dict[key] = values[i+1]
-		}
-
-		return dict, nil
-	},
-}
 
 func LoadTemplates(router *gin.Engine) error {
 	return LoadTemplatesFromFS(router, TemplateFS)
@@ -64,7 +43,7 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 		return fmt.Errorf("no template files found")
 	}
 
-	tmpl := template.New("").Funcs(templateFuncs)
+	tmpl := template.New("").Funcs(utils.TemplateFuncMap())
 
 	for _, tmplPath := range templateFiles {
 		content, err := fs.ReadFile(fsys, tmplPath)
@@ -80,7 +59,7 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 		}
 	}
 
-	router.SetFuncMap(templateFuncs)
+	router.SetFuncMap(utils.TemplateFuncMap())
 	router.SetHTMLTemplate(tmpl)
 
 	return nil
