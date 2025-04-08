@@ -20,21 +20,7 @@ func LoadTemplates(router *gin.Engine) error {
 }
 
 func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
-	templateFiles := make([]string, 0)
-
-	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !d.IsDir() && filepath.Ext(path) == ".gohtml" {
-			path = strings.TrimPrefix(path, "./")
-			templateFiles = append(templateFiles, path)
-		}
-
-		return nil
-	})
-
+	templateFiles, err := findTemplateFiles(fsys)
 	if err != nil {
 		return err
 	}
@@ -47,13 +33,11 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 
 	for _, tmplPath := range templateFiles {
 		content, err := fs.ReadFile(fsys, tmplPath)
-
 		if err != nil {
 			return fmt.Errorf("error reading template %s: %w", tmplPath, err)
 		}
 
 		_, err = tmpl.New(tmplPath).Parse(string(content))
-
 		if err != nil {
 			return fmt.Errorf("error parsing template %s: %w", tmplPath, err)
 		}
@@ -66,9 +50,13 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 }
 
 func GetTemplateFiles() ([]string, error) {
+	return findTemplateFiles(TemplateFS)
+}
+
+func findTemplateFiles(fsys fs.FS) ([]string, error) {
 	var files []string
 
-	err := fs.WalkDir(TemplateFS, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
