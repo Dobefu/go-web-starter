@@ -8,13 +8,20 @@ import (
 )
 
 var BuildHash string
+var executablePath = os.Executable // For testing purposes
 
 func init() {
 	BuildHash = generateBuildHash()
 }
 
 func generateBuildHash() string {
-	file, err := os.Open(os.Args[0])
+	executable, err := executablePath()
+
+	if err != nil {
+		return "-"
+	}
+
+	file, err := os.Open(executable)
 	defer func() { _ = file.Close() }()
 
 	if err != nil {
