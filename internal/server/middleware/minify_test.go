@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/gin-gonic/gin"
 	redisClient "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -174,7 +176,9 @@ func TestMinifyWithRedisCache(t *testing.T) {
 		mockStringCmd := &redisClient.StringCmd{}
 		mockStringCmd.SetVal("<html><body>Minified cached content</body></html>")
 
-		mockRedis.On("Get", mock.Anything, "minify:GET:/").Return(mockStringCmd, nil)
+		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
+		})).Return(mockStringCmd, nil)
 
 		router := gin.New()
 		router.Use(func(c *gin.Context) {
@@ -203,11 +207,15 @@ func TestMinifyWithRedisCache(t *testing.T) {
 	t.Run("GET request with no cached content should minify and cache", func(t *testing.T) {
 		mockRedis := new(MinifyMockRedis)
 
-		mockRedis.On("Get", mock.Anything, "minify:GET:/").Return(nil, redisClient.Nil)
+		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
+		})).Return(nil, redisClient.Nil)
 
 		mockStatusCmd := &redisClient.StatusCmd{}
 		mockStatusCmd.SetVal("OK")
-		mockRedis.On("Set", mock.Anything, "minify:GET:/", mock.Anything, time.Hour).Return(mockStatusCmd, nil)
+		mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
+		}), mock.Anything, time.Hour).Return(mockStatusCmd, nil)
 
 		router := gin.New()
 		router.Use(func(c *gin.Context) {
@@ -241,11 +249,15 @@ func TestMinifyWithRedisCache(t *testing.T) {
 	t.Run("GET request with Redis error should still minify content", func(t *testing.T) {
 		mockRedis := new(MinifyMockRedis)
 
-		mockRedis.On("Get", mock.Anything, "minify:GET:/").Return(nil, assert.AnError)
+		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
+		})).Return(nil, assert.AnError)
 
 		mockStatusCmd := &redisClient.StatusCmd{}
 		mockStatusCmd.SetVal("OK")
-		mockRedis.On("Set", mock.Anything, "minify:GET:/", mock.Anything, time.Hour).Return(mockStatusCmd, nil)
+		mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
+		}), mock.Anything, time.Hour).Return(mockStatusCmd, nil)
 
 		router := gin.New()
 		router.Use(func(c *gin.Context) {
