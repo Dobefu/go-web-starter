@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 # Run the tests.
-go test "./..." -coverprofile="coverage.out" -covermode=count
+go test "./..." -coverprofile="coverage.out" -covermode=count -parallel="$(nproc)"
 
 # Display the coverage statistics and generate an HTML report.
 go tool cover -func coverage.out

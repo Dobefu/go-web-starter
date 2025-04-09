@@ -21,6 +21,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
+          cache: true
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
 
       - uses: pnpm/action-setup@v4
 
@@ -35,17 +39,17 @@ jobs:
         run: go get .
 
       - name: Install NodeJS dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build the application
-        run: make build
+        run: make -j$(nproc) build
 
       - name: Create a test results directory
         run: mkdir test-results
 
       - name: Run tests
         run: |
-          go test "./..." -coverprofile="test-results/coverage.out" -covermode=count
+          go test "./..." -coverprofile="test-results/coverage.out" -covermode=count -parallel=$(nproc)
           go test "./..." -coverprofile="coverage.out" -covermode=count -json > test-report.out
 
       - uses: actions/upload-artifact@v4
@@ -69,7 +73,7 @@ jobs:
           cache-dependency-path: './pnpm-lock.yaml'
 
       - name: Install NodeJS dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run the linter
         run: pnpm lint
