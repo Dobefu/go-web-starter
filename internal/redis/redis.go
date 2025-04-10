@@ -30,9 +30,14 @@ var errNotInitialized error = fmt.Errorf("redis not initialized")
 
 var New = func(cfg config.Redis, log *logger.Logger) (*Redis, error) {
 	db := redisClient.NewClient(&redisClient.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Password: cfg.Password,
-		DB:       cfg.DB,
+		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		PoolSize:     100,
+		MinIdleConns: 10,
+		MaxRetries:   3,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
 	})
 
 	return &Redis{
