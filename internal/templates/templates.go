@@ -29,6 +29,7 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 		return fmt.Errorf("no template files found")
 	}
 
+	cache := GetTemplateCache()
 	tmpl := template.New("").Funcs(utils.TemplateFuncMap())
 
 	for _, tmplPath := range templateFiles {
@@ -37,10 +38,14 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 			return fmt.Errorf("error reading template %s: %w", tmplPath, err)
 		}
 
-		_, err = tmpl.New(tmplPath).Parse(string(content))
-		if err != nil {
+		name := filepath.Base(tmplPath)
+		t := tmpl.New(name).Funcs(utils.TemplateFuncMap())
+
+		if _, err := t.Parse(string(content)); err != nil {
 			return fmt.Errorf("error parsing template %s: %w", tmplPath, err)
 		}
+
+		cache.Set(name, t)
 	}
 
 	router.SetFuncMap(utils.TemplateFuncMap())
@@ -53,10 +58,8 @@ func GetTemplateFiles() ([]string, error) {
 	return findTemplateFiles(TemplateFS)
 }
 
-func findTemplateFiles(fsys fs.FS) ([]string, error) {
-	var files []string
-
-	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+func findTemplateFiles(fsys fs.FS) (files []string, err error) {
+	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
