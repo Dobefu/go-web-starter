@@ -3,6 +3,7 @@ package templates
 import (
 	"html/template"
 	"sync"
+	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/cache"
 )
@@ -31,7 +32,7 @@ func (tc *TemplateCache) Get(key string) (*template.Template, bool) {
 }
 
 func (tc *TemplateCache) Set(key string, tmpl *template.Template) {
-	tc.cache.Set(key, tmpl, 0)
+	tc.cache.Set(key, tmpl, (time.Hour * 24))
 }
 
 func (tc *TemplateCache) Clear() {
