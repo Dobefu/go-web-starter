@@ -5,7 +5,7 @@ default: build
 build:
 	@printf "Building the application...\n"
 	@pnpm build:css
-	@go build -ldflags="-s -w" -o app
+	@go build -ldflags="-s -w" -trimpath -o app
 
 run: build
 	@printf "Running the binary...\n"
