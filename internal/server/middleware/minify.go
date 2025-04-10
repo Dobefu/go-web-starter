@@ -14,6 +14,8 @@ import (
 	"github.com/tdewolff/minify/v2/json"
 )
 
+const contentTypeHeader = "Content-Type"
+
 type ResponseWriter struct {
 	gin.ResponseWriter
 	body *bytes.Buffer
@@ -49,7 +51,7 @@ func Minify() gin.HandlerFunc {
 		cache := GetMinifyCache()
 
 		if cachedContent := cache.Get(cacheKey); cachedContent != nil {
-			c.Writer.Header().Set("Content-Type", "text/html")
+			c.Writer.Header().Set(contentTypeHeader, "text/html")
 			writeResponse(c, cachedContent, "HIT")
 			c.Abort()
 
@@ -65,7 +67,7 @@ func Minify() gin.HandlerFunc {
 
 		c.Next()
 
-		contentType := originalWriter.Header().Get("Content-Type")
+		contentType := originalWriter.Header().Get(contentTypeHeader)
 		minifiedBytes := processResponse(c, m, buf, contentType, log)
 
 		cache.Set(cacheKey, minifiedBytes, time.Hour)
@@ -85,7 +87,7 @@ func processRequest(c *gin.Context, m *minify.M, log *logger.Logger) {
 
 	c.Next()
 
-	contentType := originalWriter.Header().Get("Content-Type")
+	contentType := originalWriter.Header().Get(contentTypeHeader)
 	minifiedBytes := processResponse(c, m, buf, contentType, log)
 	writeResponse(c, minifiedBytes, "MISS")
 }
