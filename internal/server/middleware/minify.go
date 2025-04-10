@@ -2,14 +2,12 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
-	"github.com/Dobefu/go-web-starter/internal/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/html"
@@ -42,7 +40,15 @@ func Minify() gin.HandlerFunc {
 			return
 		}
 
-		if cachedContent := getCachedContent(c, log); cachedContent != nil {
+		if gin.Mode() == gin.DebugMode {
+			processRequest(c, m, log)
+			return
+		}
+
+		cacheKey := fmt.Sprintf("%s:%s:%s", config.BuildHash, c.Request.Method, c.Request.URL.Path)
+		cache := GetMinifyCache()
+
+		if cachedContent := cache.Get(cacheKey); cachedContent != nil {
 			c.Writer.Header().Set("Content-Type", "text/html")
 			writeResponse(c, cachedContent, "HIT")
 			c.Abort()
@@ -62,44 +68,26 @@ func Minify() gin.HandlerFunc {
 		contentType := originalWriter.Header().Get("Content-Type")
 		minifiedBytes := processResponse(c, m, buf, contentType, log)
 
-		cacheMinifiedContent(c, minifiedBytes, log)
+		cache.Set(cacheKey, minifiedBytes, time.Hour)
 
 		writeResponse(c, minifiedBytes, "MISS")
 	}
 }
 
-func getCachedContent(c *gin.Context, log *logger.Logger) []byte {
-	redisClient, exists := c.Get("redis")
+func processRequest(c *gin.Context, m *minify.M, log *logger.Logger) {
+	buf := new(bytes.Buffer)
+	originalWriter := c.Writer
 
-	if !exists {
-		return nil
+	c.Writer = &ResponseWriter{
+		ResponseWriter: originalWriter,
+		body:           buf,
 	}
 
-	redis := redisClient.(redis.RedisInterface)
-	cacheKey := fmt.Sprintf("minify:%s:%s:%s", config.BuildHash, c.Request.Method, c.Request.URL.Path)
-	ctx := context.Background()
+	c.Next()
 
-	cachedCmd, err := redis.Get(ctx, cacheKey)
-
-	if err != nil || cachedCmd == nil {
-		return nil
-	}
-
-	cachedContent := cachedCmd.Val()
-	if cachedContent == "" {
-		return nil
-	}
-
-	cachedBytes := []byte(cachedContent)
-
-	log.Trace("Using cached minified content", logger.Fields{
-		"method": c.Request.Method,
-		"path":   c.Request.URL.Path,
-		"key":    cacheKey,
-		"size":   len(cachedBytes),
-	})
-
-	return cachedBytes
+	contentType := originalWriter.Header().Get("Content-Type")
+	minifiedBytes := processResponse(c, m, buf, contentType, log)
+	writeResponse(c, minifiedBytes, "MISS")
 }
 
 func processResponse(c *gin.Context, m *minify.M, buf *bytes.Buffer, contentType string, log *logger.Logger) []byte {
@@ -127,38 +115,6 @@ func processResponse(c *gin.Context, m *minify.M, buf *bytes.Buffer, contentType
 	}
 
 	return []byte(minified)
-}
-
-func cacheMinifiedContent(c *gin.Context, minifiedBytes []byte, log *logger.Logger) {
-	redisClient, exists := c.Get("redis")
-
-	if !exists {
-		return
-	}
-
-	redis := redisClient.(redis.RedisInterface)
-	cacheKey := fmt.Sprintf("minify:%s:%s:%s", config.BuildHash, c.Request.Method, c.Request.URL.Path)
-	ctx := context.Background()
-
-	_, err := redis.Set(ctx, cacheKey, minifiedBytes, time.Hour)
-
-	if err != nil {
-		log.Trace("Failed to cache minified content", logger.Fields{
-			"method": c.Request.Method,
-			"path":   c.Request.URL.Path,
-			"key":    cacheKey,
-			"error":  err.Error(),
-		})
-
-		return
-	}
-
-	log.Trace("Cached minified content", logger.Fields{
-		"method": c.Request.Method,
-		"path":   c.Request.URL.Path,
-		"key":    cacheKey,
-		"size":   len(minifiedBytes),
-	})
 }
 
 func writeResponse(c *gin.Context, content []byte, cacheStatus string) {

@@ -114,9 +114,9 @@ func defaultNew(port int) ServerInterface {
 		router.Use(middleware.Redis(srv.redis))
 	}
 
-	router.Use(middleware.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimit(1000, time.Minute))
+	router.Use(middleware.Logger())
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.Minify())
@@ -148,5 +148,6 @@ func (srv *Server) Start() error {
 			_ = srv.redis.Close()
 		}
 	}()
+
 	return srv.router.Run(addr)
 }
