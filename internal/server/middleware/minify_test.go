@@ -1,79 +1,13 @@
 package middleware
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/gin-gonic/gin"
-	redisClient "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-type MinifyMockRedis struct {
-	mock.Mock
-}
-
-func (m *MinifyMockRedis) Close() error {
-	args := m.Called()
-
-	return args.Error(0)
-}
-
-func (m *MinifyMockRedis) Get(ctx context.Context, key string) (*redisClient.StringCmd, error) {
-	args := m.Called(ctx, key)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*redisClient.StringCmd), args.Error(1)
-}
-
-func (m *MinifyMockRedis) Set(ctx context.Context, key string, value any, expiration time.Duration) (*redisClient.StatusCmd, error) {
-	args := m.Called(ctx, key, value, expiration)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
-}
-
-func (m *MinifyMockRedis) GetRange(ctx context.Context, key string, start, end int64) (*redisClient.StringCmd, error) {
-	args := m.Called(ctx, key, start, end)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*redisClient.StringCmd), args.Error(1)
-}
-
-func (m *MinifyMockRedis) SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error) {
-	args := m.Called(ctx, key, offset, value)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*redisClient.IntCmd), args.Error(1)
-}
-
-func (m *MinifyMockRedis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
-	args := m.Called(ctx)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
-}
 
 func TestMinifyMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -96,6 +30,8 @@ func TestMinifyMiddleware(t *testing.T) {
 	})
 
 	t.Run("GET request with HTML content should be minified", func(t *testing.T) {
+		GetMinifyCache().Clear()
+
 		router := gin.New()
 		router.Use(Minify())
 
@@ -125,6 +61,8 @@ func TestMinifyMiddleware(t *testing.T) {
 	})
 
 	t.Run("GET request with JSON content should be minified", func(t *testing.T) {
+		GetMinifyCache().Clear()
+
 		router := gin.New()
 		router.Use(Minify())
 
@@ -149,6 +87,8 @@ func TestMinifyMiddleware(t *testing.T) {
 	})
 
 	t.Run("GET request with unsupported content type should not be minified", func(t *testing.T) {
+		GetMinifyCache().Clear()
+
 		router := gin.New()
 		router.Use(Minify())
 
@@ -167,30 +107,25 @@ func TestMinifyMiddleware(t *testing.T) {
 	})
 }
 
-func TestMinifyWithRedisCache(t *testing.T) {
+func TestMinifyWithCache(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("GET request with cached content should return cached content", func(t *testing.T) {
-		mockRedis := new(MinifyMockRedis)
-
-		mockStringCmd := &redisClient.StringCmd{}
-		mockStringCmd.SetVal("<html><body>Minified cached content</body></html>")
-
-		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
-			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
-		})).Return(mockStringCmd, nil)
+		GetMinifyCache().Clear()
 
 		router := gin.New()
-		router.Use(func(c *gin.Context) {
-			c.Set("redis", mockRedis)
-			c.Next()
-		})
 		router.Use(Minify())
 
-		handlerCalled := false
 		router.GET("/", func(c *gin.Context) {
-			handlerCalled = true
-			c.String(http.StatusOK, "This should not be returned")
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusOK, `
+				<!DOCTYPE html>
+				<html>
+					<body>
+						<h1>Test Content</h1>
+					</body>
+				</html>
+			`)
 		})
 
 		w := httptest.NewRecorder()
@@ -198,30 +133,23 @@ func TestMinifyWithRedisCache(t *testing.T) {
 		assert.NoError(t, err)
 		router.ServeHTTP(w, req)
 
-		assert.Equal(t, "<html><body>Minified cached content</body></html>", w.Body.String())
+		expectedContent := "<!doctype html><html><body><h1>Test Content</h1></body></html>"
+		assert.Equal(t, expectedContent, w.Body.String())
+		assert.Equal(t, "MISS", w.Header().Get("X-Cache"))
+
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/", nil)
+		assert.NoError(t, err)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, expectedContent, w.Body.String())
 		assert.Equal(t, "HIT", w.Header().Get("X-Cache"))
-		assert.False(t, handlerCalled, "Handler should not be called when cached content is available")
-		mockRedis.AssertExpectations(t)
 	})
 
-	t.Run("GET request with no cached content should minify and cache", func(t *testing.T) {
-		mockRedis := new(MinifyMockRedis)
-
-		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
-			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
-		})).Return(nil, redisClient.Nil)
-
-		mockStatusCmd := &redisClient.StatusCmd{}
-		mockStatusCmd.SetVal("OK")
-		mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(key string) bool {
-			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
-		}), mock.Anything, time.Hour).Return(mockStatusCmd, nil)
+	t.Run("GET request with expired cache should minify and cache", func(t *testing.T) {
+		GetMinifyCache().Clear()
 
 		router := gin.New()
-		router.Use(func(c *gin.Context) {
-			c.Set("redis", mockRedis)
-			c.Next()
-		})
 		router.Use(Minify())
 
 		router.GET("/", func(c *gin.Context) {
@@ -230,7 +158,7 @@ func TestMinifyWithRedisCache(t *testing.T) {
 				<!DOCTYPE html>
 				<html>
 					<body>
-						<h1>Test Content</h1>
+						<h1>New Content</h1>
 					</body>
 				</html>
 			`)
@@ -241,29 +169,28 @@ func TestMinifyWithRedisCache(t *testing.T) {
 		assert.NoError(t, err)
 		router.ServeHTTP(w, req)
 
-		assert.Equal(t, "<!doctype html><html><body><h1>Test Content</h1></body></html>", w.Body.String())
+		expectedContent := "<!doctype html><html><body><h1>New Content</h1></body></html>"
+		assert.Equal(t, expectedContent, w.Body.String())
 		assert.Equal(t, "MISS", w.Header().Get("X-Cache"))
-		mockRedis.AssertExpectations(t)
+
+		GetMinifyCache().Clear()
+
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/", nil)
+		assert.NoError(t, err)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, expectedContent, w.Body.String())
+		assert.Equal(t, "MISS", w.Header().Get("X-Cache"))
 	})
 
-	t.Run("GET request with Redis error should still minify content", func(t *testing.T) {
-		mockRedis := new(MinifyMockRedis)
+	t.Run("GET request in development mode should not use cache", func(t *testing.T) {
+		GetMinifyCache().Clear()
 
-		mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
-			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
-		})).Return(nil, assert.AnError)
-
-		mockStatusCmd := &redisClient.StatusCmd{}
-		mockStatusCmd.SetVal("OK")
-		mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(key string) bool {
-			return key == fmt.Sprintf("minify:%s:GET:/", config.BuildHash)
-		}), mock.Anything, time.Hour).Return(mockStatusCmd, nil)
+		gin.SetMode(gin.DebugMode)
+		defer gin.SetMode(gin.TestMode)
 
 		router := gin.New()
-		router.Use(func(c *gin.Context) {
-			c.Set("redis", mockRedis)
-			c.Next()
-		})
 		router.Use(Minify())
 
 		router.GET("/", func(c *gin.Context) {
@@ -272,7 +199,7 @@ func TestMinifyWithRedisCache(t *testing.T) {
 				<!DOCTYPE html>
 				<html>
 					<body>
-						<h1>Test Content</h1>
+						<h1>Dev Content</h1>
 					</body>
 				</html>
 			`)
@@ -283,8 +210,16 @@ func TestMinifyWithRedisCache(t *testing.T) {
 		assert.NoError(t, err)
 		router.ServeHTTP(w, req)
 
-		assert.Equal(t, "<!doctype html><html><body><h1>Test Content</h1></body></html>", w.Body.String())
+		expectedContent := "<!doctype html><html><body><h1>Dev Content</h1></body></html>"
+		assert.Equal(t, expectedContent, w.Body.String())
 		assert.Equal(t, "MISS", w.Header().Get("X-Cache"))
-		mockRedis.AssertExpectations(t)
+
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/", nil)
+		assert.NoError(t, err)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, expectedContent, w.Body.String())
+		assert.Equal(t, "MISS", w.Header().Get("X-Cache"))
 	})
 }
