@@ -29,6 +29,8 @@
       </main>
 
       {{ template "components/layout/footer" . }}
+
+      <script nonce="{{ .Nonce }}" src="/static/js/dist/main.js"></script>
     </body>
   </html>
 {{ end }}

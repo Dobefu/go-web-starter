@@ -11,9 +11,11 @@ tmp/
 # NodeJS packages.
 node_modules/
 
-# Built CSS files.
+# Built CSS and JS files.
 internal/static/static/css/dist/*
 !internal/static/static/css/dist/.gitkeep
+internal/static/static/js/dist/*
+!internal/static/static/js/dist/.gitkeep
 
 # The config file for the application.
 config.toml

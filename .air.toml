@@ -7,14 +7,35 @@ tmp_dir = "tmp"
   bin = "./app"
   cmd = "go build -buildvcs=false -o app"
   delay = 100
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", ".git", "test-results"]
+  exclude_dir = [
+    "assets",
+    "tmp",
+    "vendor",
+    "testdata",
+    "node_modules",
+    ".git",
+    "test-results",
+    "internal/static/static/js/dist",
+  ]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = true
   follow_symlink = false
   full_bin = ""
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "gohtml", "json", "css", "js", "mjs", "toml"]
+  include_ext = [
+    "go",
+    "tpl",
+    "tmpl",
+    "html",
+    "gohtml",
+    "json",
+    "css",
+    "js",
+    "ts",
+    "mjs",
+    "toml",
+  ]
   include_file = []
   kill_delay = "0s"
   log = "tmp/build-errors.log"
@@ -22,7 +43,7 @@ tmp_dir = "tmp"
   poll_interval = 0
   post_cmd = []
   pre_cmd = [
-    "pnpm build:css",
+    "pnpm build",
   ]
   rerun = false
   rerun_delay = 500
