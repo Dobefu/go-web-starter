@@ -1,28 +1,30 @@
 import js from '@eslint/js'
+import typescriptPlugin from '@typescript-eslint/eslint-plugin'
 import typescript from '@typescript-eslint/parser'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 
 export default defineConfig([
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['internal/static/static/js/src/**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
+      globals: globals.browser,
       parser: typescript,
-      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
     },
-  },
-  {
-    files: ['**/*.{js,mjs,cjs}'],
-    languageOptions: {
-      globals: globals.browser,
+    plugins: {
+      '@typescript-eslint': typescriptPlugin,
     },
-  },
-  {
-    files: ['**/*.{js,ts,mjs,cjs,tsx}'],
-    plugins: { js },
-    extends: ['js/recommended'],
     rules: {
       eqeqeq: ['error', 'always'],
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
     },
   },
 ])

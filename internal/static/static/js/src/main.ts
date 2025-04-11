@@ -1,4 +1,7 @@
-type Module = { init?: () => void }
+interface Module {
+  init?: () => void
+}
+
 const modules = import.meta.glob<Module>('./components/**/*.ts')
 
 Object.values(modules).forEach(async (module) => {
