@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const scriptSrcKey = "script-src"
+
 type SecurityConfig struct {
 	headers map[string]string
 	CSP     CSPConfig
@@ -20,7 +22,7 @@ type CSPConfig struct {
 
 func generateNonce() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 
 	return base64.StdEncoding.EncodeToString(b)
 }
@@ -31,7 +33,7 @@ func NewCSPConfig() CSPConfig {
 			"default-src": {
 				"self",
 			},
-			"script-src": {
+			scriptSrcKey: {
 				"strict-dynamic",
 				"sha256-shfdQDc5l63QrdRcyAdIpEYqlgxbfEfXuTNyWpgtloM=",
 			},
@@ -100,8 +102,8 @@ func newDefaultConfig() SecurityConfig {
 func (config SecurityConfig) SetHeaders(c *gin.Context) {
 	nonce := generateNonce()
 
-	config.CSP.directives["script-src"] = append(
-		config.CSP.directives["script-src"],
+	config.CSP.directives[scriptSrcKey] = append(
+		config.CSP.directives[scriptSrcKey],
 		fmt.Sprintf("nonce-%s", nonce),
 	)
 
