@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +16,13 @@ type SecurityConfig struct {
 
 type CSPConfig struct {
 	directives map[string][]string
+}
+
+func generateNonce() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func NewCSPConfig() CSPConfig {
@@ -88,11 +98,19 @@ func newDefaultConfig() SecurityConfig {
 }
 
 func (config SecurityConfig) SetHeaders(c *gin.Context) {
+	nonce := generateNonce()
+
+	config.CSP.directives["script-src"] = append(
+		config.CSP.directives["script-src"],
+		fmt.Sprintf("nonce-%s", nonce),
+	)
+
 	for header, value := range config.headers {
 		c.Header(header, value)
 	}
 
 	c.Header("Content-Security-Policy", config.CSP.String())
+	c.Set("nonce", nonce)
 }
 
 func CspHeaders() gin.HandlerFunc {

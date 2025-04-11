@@ -14,10 +14,12 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		RouteData
 		SiteName string
 		Year     string
+		Nonce    string
 	}{
 		RouteData: routeData,
 		SiteName:  viper.GetString("site.name"),
 		Year:      time.Now().Format("2006"),
+		Nonce:     c.GetString("nonce"),
 	}
 
 	if gin.Mode() == gin.DebugMode {
