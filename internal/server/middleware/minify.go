@@ -38,12 +38,31 @@ func Minify() gin.HandlerFunc {
 				"method": c.Request.Method,
 				"path":   c.Request.URL.Path,
 			})
+
 			c.Next()
 			return
 		}
 
 		if gin.Mode() == gin.DebugMode {
 			processRequest(c, m, log)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		originalWriter := c.Writer
+
+		c.Writer = &ResponseWriter{
+			ResponseWriter: originalWriter,
+			body:           buf,
+		}
+
+		c.Next()
+
+		contentType := originalWriter.Header().Get(contentTypeHeader)
+		content := buf.Bytes()
+
+		if bytes.Contains(content, []byte("dynamic-content")) {
+			writeResponse(c, content, "SKIP")
 			return
 		}
 
@@ -58,20 +77,8 @@ func Minify() gin.HandlerFunc {
 			return
 		}
 
-		buf := new(bytes.Buffer)
-		originalWriter := c.Writer
-		c.Writer = &ResponseWriter{
-			ResponseWriter: originalWriter,
-			body:           buf,
-		}
-
-		c.Next()
-
-		contentType := originalWriter.Header().Get(contentTypeHeader)
 		minifiedBytes := processResponse(c, m, buf, contentType, log)
-
 		cache.Set(cacheKey, minifiedBytes, time.Hour)
-
 		writeResponse(c, minifiedBytes, "MISS")
 	}
 }
@@ -89,22 +96,26 @@ func processRequest(c *gin.Context, m *minify.M, log *logger.Logger) {
 
 	contentType := originalWriter.Header().Get(contentTypeHeader)
 	minifiedBytes := processResponse(c, m, buf, contentType, log)
+
 	writeResponse(c, minifiedBytes, "MISS")
 }
 
 func processResponse(c *gin.Context, m *minify.M, buf *bytes.Buffer, contentType string, log *logger.Logger) []byte {
 	// If there's no corresponding minify function, return the original data.
 	_, _, minifierFunc := m.Match(contentType)
+
 	if minifierFunc == nil {
 		log.Trace("No minifier found for content type", logger.Fields{
 			"method":      c.Request.Method,
 			"path":        c.Request.URL.Path,
 			"contentType": contentType,
 		})
+
 		return buf.Bytes()
 	}
 
 	minified, err := m.String(contentType, buf.String())
+
 	if err != nil {
 		log.Trace("Minification failed, using original content", logger.Fields{
 			"method":      c.Request.Method,
@@ -121,8 +132,9 @@ func processResponse(c *gin.Context, m *minify.M, buf *bytes.Buffer, contentType
 
 func writeResponse(c *gin.Context, content []byte, cacheStatus string) {
 	var originalWriter gin.ResponseWriter
+	rw, ok := c.Writer.(*ResponseWriter)
 
-	if rw, ok := c.Writer.(*ResponseWriter); ok {
+	if ok {
 		originalWriter = rw.ResponseWriter
 	} else {
 		originalWriter = c.Writer

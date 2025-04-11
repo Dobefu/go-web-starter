@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bytes"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/templates"
@@ -30,11 +31,14 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 	if ok && tmpl != nil {
 		c.Status(data.HttpStatus)
 
-		if err := tmpl.Execute(c.Writer, data); err != nil {
+		buf := new(bytes.Buffer)
+
+		if err := tmpl.Execute(buf, data); err != nil {
 			c.Error(err)
 			return
 		}
 
+		c.Writer.Write(buf.Bytes())
 		return
 	}
 

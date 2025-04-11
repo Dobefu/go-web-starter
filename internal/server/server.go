@@ -120,6 +120,7 @@ func defaultNew(port int) ServerInterface {
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.Minify())
+	router.Use(middleware.DynamicContent())
 
 	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
