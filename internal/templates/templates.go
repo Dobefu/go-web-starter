@@ -10,6 +10,8 @@ import (
 
 	"github.com/Dobefu/go-web-starter/internal/server/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/html"
 )
 
 //go:embed components/**/*.gohtml layouts/*.gohtml pages/*.gohtml
@@ -32,16 +34,27 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 	cache := GetTemplateCache()
 	tmpl := template.New("").Funcs(utils.TemplateFuncMap())
 
+	m := minify.New()
+	m.Add("text/html", &html.Minifier{KeepDocumentTags: true})
+
 	for _, tmplPath := range templateFiles {
 		content, err := fs.ReadFile(fsys, tmplPath)
 		if err != nil {
 			return fmt.Errorf("error reading template %s: %w", tmplPath, err)
 		}
 
+		minified, err := m.String("text/html", string(content))
+
+		if err != nil {
+			return fmt.Errorf("error minifying template %s: %w", tmplPath, err)
+		}
+
 		name := filepath.Base(tmplPath)
 		t := tmpl.New(name).Funcs(utils.TemplateFuncMap())
 
-		if _, err := t.Parse(string(content)); err != nil {
+		_, err = t.Parse(minified)
+
+		if err != nil {
 			return fmt.Errorf("error parsing template %s: %w", tmplPath, err)
 		}
 
