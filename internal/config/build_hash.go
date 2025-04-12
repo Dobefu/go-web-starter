@@ -35,5 +35,5 @@ func generateBuildHash() string {
 		return "-"
 	}
 
-	return fmt.Sprintf("%x\n", hash.Sum(nil))
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }
