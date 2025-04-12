@@ -35,7 +35,12 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 	tmpl := template.New("").Funcs(utils.TemplateFuncMap())
 
 	m := minify.New()
-	m.Add("text/html", &html.Minifier{KeepDocumentTags: true})
+	m.Add("text/html", &html.Minifier{
+		KeepDocumentTags: true,
+		KeepWhitespace:   false,
+		KeepEndTags:      false,
+		KeepQuotes:       false,
+	})
 
 	for _, tmplPath := range templateFiles {
 		content, err := fs.ReadFile(fsys, tmplPath)

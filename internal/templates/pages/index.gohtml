@@ -1,7 +1,7 @@
-{{ define "pages/index" }}
-  {{ template "layouts/default/head" . }}
+{{- define "pages/index" -}}
+  {{- template "layouts/default/head" . -}}
 
-  {{ template "components/atoms/heading" dict "Level" 1 "Text" .Title }}
+  {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
 
-  {{ template "layouts/default/foot" . }}
-{{ end }}
+  {{- template "layouts/default/foot" . -}}
+{{- end -}}

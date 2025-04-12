@@ -1,10 +1,10 @@
-{{ define "pages/not-found" }}
-  {{ template "layouts/default/head" . }}
+{{- define "pages/not-found" -}}
+  {{- template "layouts/default/head" . -}}
 
-  {{ template "components/atoms/heading" dict "Level" 1 "Text" .Title }}
+  {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
 
 
   <p>The page could not be found</p>
 
-  {{ template "layouts/default/foot" . }}
-{{ end }}
+  {{- template "layouts/default/foot" . -}}
+{{- end -}}
