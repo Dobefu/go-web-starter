@@ -13,10 +13,10 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your int
 3. Make your changes
 4. Run tests and linters:
 
-    ```bash
-    make test
-    make lint
-    ```
+   ```bash
+   make test
+   make lint
+   ```
 
 5. Commit your changes (`git commit -m 'Add a cool new feature'`)
 6. Push to the branch (`git push origin feature/cool-new-feature`)
@@ -33,40 +33,40 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your int
 
 1. Clone the repository:
 
-    ```bash
-    git clone https://github.com/Dobefu/go-web-starter.git
-    cd go-web-starter
-    ```
+   ```bash
+   git clone https://github.com/Dobefu/go-web-starter.git
+   cd go-web-starter
+   ```
 
 2. Install Go dependencies:
 
-    ```bash
-    go mod download
-    ```
+   ```bash
+   go mod download
+   ```
 
 3. Install frontend dependencies:
 
-    ```bash
-    bun install
-    ```
+   ```bash
+   bun install
+   ```
 
 4. Start the development server:
 
-    ```bash
-    make dev
-    ```
+   ```bash
+   make dev
+   ```
 
    Or run directly:
 
-    ```bash
-    go run main.go server
-    ```
+   ```bash
+   go run main.go server
+   ```
 
    The server will start on port 4000 by default. You can change the port using the `-p` flag:
 
-    ```bash
-    go run main.go server -p 8080
-    ```
+   ```bash
+   go run main.go server -p 8080
+   ```
 
 ## Code Style
 
@@ -79,9 +79,9 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your int
 
 - Run the test suite before submitting a PR:
 
-    ```bash
-    make test
-    ```
+  ```bash
+  make test
+  ```
 
 - Ensure test coverage doesn't decrease
 - Add tests for new features
