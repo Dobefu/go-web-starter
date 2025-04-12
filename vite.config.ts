@@ -9,5 +9,6 @@ export default defineConfig({
       fileName: () => 'main.js',
     },
     outDir: 'internal/static/static/js/dist',
+    emptyOutDir: false,
   },
 })
