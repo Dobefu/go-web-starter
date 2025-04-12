@@ -26,20 +26,16 @@ jobs:
             **/go.sum
             **/go.mod
 
-      - uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version-file: './.nvmrc'
-          cache: 'pnpm'
-          cache-dependency-path: './pnpm-lock.yaml'
+          bun-version: latest
 
       - name: Install Go dependencies
         run: go get .
 
       - name: Install NodeJS dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Build the application
         run: make -j$(nproc) build
@@ -63,20 +59,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version-file: './.nvmrc'
-          cache: 'pnpm'
-          cache-dependency-path: './pnpm-lock.yaml'
+          bun-version: latest
 
       - name: Install NodeJS dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Run the linter
-        run: pnpm lint
+        run: bun run lint
 
   sonar-scan:
     name: 'SonarQube Scan'
