@@ -4,7 +4,7 @@ default: build
 
 build:
 	@printf "Building the application...\n"
-	@bun build
+	@bun run build
 	@go build -ldflags="-s -w" -trimpath -o app
 
 run: build
@@ -20,7 +20,7 @@ test:
 
 lint:
 	@printf "Linting files...\n"
-	@bun lint
+	@bun run lint
 
 bench:
 	@printf "Starting benchmark...\n"
