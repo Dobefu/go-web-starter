@@ -4,11 +4,19 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '00:00'
     assignees:
+      - 'Dobefu'
+    reviewers:
       - 'Dobefu'
   - package-ecosystem: 'bun'
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '00:00'
     assignees:
+      - 'Dobefu'
+    reviewers:
       - 'Dobefu'
