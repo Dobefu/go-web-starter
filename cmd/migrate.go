@@ -9,6 +9,28 @@ import (
 	"github.com/spf13/viper"
 )
 
+type DatabaseMigrator interface {
+	MigrateUp(cfg config.Database) error
+	MigrateDown(cfg config.Database) error
+	MigrateVersion(cfg config.Database) (int, error)
+}
+
+type defaultDatabaseMigrator struct{}
+
+func (d *defaultDatabaseMigrator) MigrateUp(cfg config.Database) error {
+	return database.MigrateUp(cfg)
+}
+
+func (d *defaultDatabaseMigrator) MigrateDown(cfg config.Database) error {
+	return database.MigrateDown(cfg)
+}
+
+func (d *defaultDatabaseMigrator) MigrateVersion(cfg config.Database) (int, error) {
+	return database.MigrateVersion(cfg)
+}
+
+var migrator DatabaseMigrator = &defaultDatabaseMigrator{}
+
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Run database migrations",
@@ -40,7 +62,7 @@ func init() {
 }
 
 func migrateUp(cmd *cobra.Command, args []string) {
-	err := database.MigrateUp(getDatabaseConfig())
+	err := migrator.MigrateUp(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
@@ -48,7 +70,7 @@ func migrateUp(cmd *cobra.Command, args []string) {
 }
 
 func migrateDown(cmd *cobra.Command, args []string) {
-	err := database.MigrateDown(getDatabaseConfig())
+	err := migrator.MigrateDown(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
@@ -56,7 +78,7 @@ func migrateDown(cmd *cobra.Command, args []string) {
 }
 
 func migrateVersion(cmd *cobra.Command, args []string) {
-	version, err := database.MigrateVersion(getDatabaseConfig())
+	version, err := migrator.MigrateVersion(getDatabaseConfig())
 
 	if err != nil {
 		panic(err)
