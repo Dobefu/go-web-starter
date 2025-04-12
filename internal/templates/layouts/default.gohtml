@@ -16,7 +16,7 @@
         href="/static/favicon.ico"
       />
 
-      <link href="/static/css/dist/main.css" rel="stylesheet" />
+      <link href="/static/css/dist/main.css?v={{ .BuildHash }}" rel="stylesheet" />
     </head>
     <body class="flex min-h-full flex-col antialiased">
       {{ template "components/layout/header" . }}
@@ -30,7 +30,7 @@
 
       {{ template "components/layout/footer" . }}
 
-      <script nonce="{{ .Nonce }}" src="/static/js/dist/main.js"></script>
+      <script nonce="{{ .Nonce }}" src="/static/js/dist/main.js?v={{ .BuildHash }}"></script>
     </body>
   </html>
 {{ end }}

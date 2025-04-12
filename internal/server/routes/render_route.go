@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"time"
 
+	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/templates"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -12,14 +13,16 @@ import (
 func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 	data := struct {
 		RouteData
-		SiteName string
-		Year     string
-		Nonce    string
+		SiteName  string
+		Year      string
+		Nonce     string
+		BuildHash string
 	}{
 		RouteData: routeData,
 		SiteName:  viper.GetString("site.name"),
 		Year:      time.Now().Format("2006"),
 		Nonce:     c.GetString("nonce"),
+		BuildHash: config.BuildHash,
 	}
 
 	if gin.Mode() == gin.DebugMode {
