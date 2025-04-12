@@ -25,7 +25,7 @@ func TestCacheHeaders(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		headers := w.Header()
-		assert.Equal(t, "public, max-age=604800", headers.Get("Cache-Control"))
+		assert.Equal(t, "public, max-age=31536000", headers.Get("Cache-Control"))
 		assert.NotEmpty(t, headers.Get("Expires"))
 	})
 

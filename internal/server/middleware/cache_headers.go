@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const cacheDuration = time.Hour * 24 * 7
+const cacheDuration = time.Hour * 24 * 365
 
 func CacheHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
