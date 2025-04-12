@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build:css": "tailwindcss -i ./internal/static/static/css/src/main.css -o ./internal/static/static/css/dist/main.css -m",
-    "build:js": "vite build",
+    "build:js": "bun build ./internal/static/static/js/src/main.ts --outdir ./internal/static/static/js/dist --target browser --minify",
     "build": "bun run build:css && bun run build:js",
     "lint": "eslint . && prettier . --check",
     "lint:fix": "eslint . && prettier . --write"
@@ -29,7 +29,6 @@
     "prettier-plugin-go-template": "^0.0.15",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4.1.3",
-    "typescript": "^5.8.3",
-    "vite": "^6.2.6"
+    "typescript": "^5.8.3"
   }
 }
