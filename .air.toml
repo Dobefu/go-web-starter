@@ -43,7 +43,7 @@ tmp_dir = "tmp"
   poll_interval = 0
   post_cmd = []
   pre_cmd = [
-    "pnpm build",
+    "bun run build",
   ]
   rerun = false
   rerun_delay = 500
