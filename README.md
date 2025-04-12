@@ -8,7 +8,7 @@
 > [!WARNING]
 > This repository is still a work-in-progress
 
-A modern, production-ready Go web application starter template with best practices and common features pre-configured.
+A modern, production-ready Go web application starter template with best practices and common features pre-configured. This template includes both backend (Go) and frontend (TypeScript) components.
 
 ## Features
 
@@ -16,13 +16,17 @@ A modern, production-ready Go web application starter template with best practic
 - 📦 Clean project structure following Go best practices
 - 🔧 Live reloading for development
 - 🧪 Built-in testing setup
-- 📊 Code quality tools (SonarQube)
+- 📊 Code quality tools (SonarQube, ESLint, Prettier)
 - 🔄 CI/CD pipeline ready
 - 🛡️ Security best practices
+- 💻 Modern frontend development with TypeScript and Bun
+- 🎨 Consistent code formatting with Prettier
+- 📝 Type safety with TypeScript
 
 ## Prerequisites
 
 - Go 1.24 or higher
+- Bun (for frontend development)
 - Air (optional, for live reloading)
 - Make (optional, for using Makefile commands)
 - Docker (optional, for containerization)
@@ -38,10 +42,16 @@ A modern, production-ready Go web application starter template with best practic
    cd go-web-starter
    ```
 
-2. Install dependencies:
+2. Install Go dependencies:
 
    ```bash
    go mod download
+   ```
+
+3. Install frontend dependencies:
+
+   ```bash
+   bun install
    ```
 
 ### Development
@@ -80,17 +90,30 @@ Build the application:
 make build
 ```
 
+This will build both the frontend and backend components.
+
 ## Development Tools
 
 ### Air (For live Reloading)
 
 The project uses [Air](https://github.com/cosmtrek/air) for live reloading during development. Configuration can be found in `.air.toml`.
 
+### Frontend Development
+
+The frontend uses:
+
+- TypeScript for type safety
+- Bun for package management and bundling
+- ESLint for code linting
+- Prettier for code formatting
+
 ### Make Commands
 
 - `make dev`: Start development server with live reloading
 - `make build`: Build the application
 - `make test`: Run tests
+- `make lint`: Run linters
+- `make bench`: Run benchmarks
 - `make clean`: Clean build artifacts
 
 ## Contributing
