@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/fatih/color"
@@ -61,9 +62,16 @@ func (l *Logger) log(level Level, msg string, fields Fields) {
 	messagePart := color.New(color.FgWhite).Sprintf("\"%s\"", msg)
 
 	var fieldsPart string
+	keys := make([]string, 0, len(fields))
 
-	for k, v := range fields {
-		fieldsPart += " " + color.New(color.FgCyan).Sprintf("%s=%v", k, v)
+	for k := range fields {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		fieldsPart += " " + color.New(color.FgCyan).Sprintf("%s=%v", k, fields[k])
 	}
 
 	logLine := fmt.Sprintf("%s %s%s %s%s", timestampPart, levelPart, requestIDPart, messagePart, fieldsPart)
