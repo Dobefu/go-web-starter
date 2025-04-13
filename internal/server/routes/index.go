@@ -11,8 +11,8 @@ func Index(c *gin.Context) {
 		Template:   "pages/index",
 		HttpStatus: http.StatusOK,
 
-		Title:       "INDEX",
-		Description: "INDEX",
+		Title:       "Welcome to Go Web Starter",
+		Description: "A modern, production-ready Go web application template with best practices and common features pre-configured",
 	}
 
 	RenderRouteHTML(c, data)

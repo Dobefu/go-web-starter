@@ -3,5 +3,72 @@
 
   {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
 
+
+  <div class="prose prose-lg flex flex-col gap-8">
+    <p class="text-xl text-gray-700">
+      Welcome to your Go Web Starter application! This template provides a solid
+      foundation for building modern web applications with Go and TypeScript.
+    </p>
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <section class="flex flex-col gap-4 rounded-lg bg-zinc-50 p-6 shadow-sm">
+        <h2 class="text-2xl font-semibold text-sky-700">Getting Started</h2>
+        <p>You can start building your application by:</p>
+
+        <ul class="list-disc space-y-2 pl-6">
+          <li>
+            Customizing the templates in the
+            <code class="rounded bg-gray-100 px-1.5 py-0.5"
+              >internal/templates</code
+            >
+            directory
+          </li>
+
+          <li>
+            Adding new routes in
+            <code class="rounded bg-gray-100 px-1.5 py-0.5"
+              >internal/routes</code
+            >
+          </li>
+
+          <li>
+            Creating new components in
+            <code class="rounded bg-gray-100 px-1.5 py-0.5"
+              >internal/templates/components</code
+            >
+          </li>
+
+          <li>
+            Running tests with
+            <code class="rounded bg-gray-100 px-1.5 py-0.5">make test</code>
+          </li>
+        </ul>
+      </section>
+
+      <section class="flex flex-col gap-4 rounded-lg bg-zinc-50 p-6 shadow-sm">
+        <h2 class="text-2xl font-semibold text-sky-700">Template Features</h2>
+
+        <p>The template includes:</p>
+
+        <ul class="list-disc space-y-2 pl-6">
+          <li>Live reloading for development</li>
+          <li>TypeScript and Bun for frontend development</li>
+          <li>ESLint and Prettier for code quality</li>
+          <li>Built-in testing framework</li>
+          <li>Responsive layout and modern design</li>
+          <li>Built-in components for common UI elements</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="text-center">
+      {{- template "components/atoms/link" dict
+        "Text" "View project documentation and source code →"
+        "Href" "https://github.com/Dobefu/go-web-starter"
+        "Classes" "text-center"
+      -}}
+    </div>
+  </div>
+
   {{- template "layouts/default/foot" . -}}
 {{- end -}}
