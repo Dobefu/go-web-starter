@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/Dobefu/go-web-starter/internal/server/utils"
@@ -40,6 +41,7 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 		KeepWhitespace:   false,
 		KeepEndTags:      false,
 		KeepQuotes:       false,
+		TemplateDelims:   html.GoTemplateDelims,
 	})
 
 	for _, tmplPath := range templateFiles {
@@ -48,7 +50,8 @@ func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 			return fmt.Errorf("error reading template %s: %w", tmplPath, err)
 		}
 
-		minified, err := m.String("text/html", string(content))
+		preprocessed := preprocessTemplate(string(content))
+		minified, err := m.String("text/html", preprocessed)
 
 		if err != nil {
 			return fmt.Errorf("error minifying template %s: %w", tmplPath, err)
@@ -95,4 +98,10 @@ func findTemplateFiles(fsys fs.FS) (files []string, err error) {
 
 func GetTemplateContent(path string) ([]byte, error) {
 	return TemplateFS.ReadFile(path)
+}
+
+func preprocessTemplate(content string) string {
+	content = regexp.MustCompile(`\s{0,9}\n\s{0,9}([a-zA-Z-]{1,9}=)`).ReplaceAllString(content, " $1")
+
+	return content
 }
