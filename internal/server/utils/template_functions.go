@@ -2,6 +2,7 @@ package utils
 
 import (
 	"html/template"
+	"strings"
 )
 
 func TemplateFuncMap() template.FuncMap {
@@ -28,6 +29,9 @@ func TemplateFuncMap() template.FuncMap {
 		},
 		"raw": func(s string) template.HTML {
 			return template.HTML(s)
+		},
+		"startswith": func(s, prefix string) bool {
+			return strings.HasPrefix(s, prefix)
 		},
 	}
 }
