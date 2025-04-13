@@ -1,8 +1,13 @@
 package utils
 
 import (
+	"fmt"
 	"html/template"
+	"io/fs"
+	"path/filepath"
 	"strings"
+
+	"github.com/Dobefu/go-web-starter/internal/static"
 )
 
 func TemplateFuncMap() template.FuncMap {
@@ -32,6 +37,21 @@ func TemplateFuncMap() template.FuncMap {
 		},
 		"startswith": func(s, prefix string) bool {
 			return strings.HasPrefix(s, prefix)
+		},
+		"readfile": func(icon string) string {
+			subFS, err := static.GetStaticFS()
+
+			if err != nil {
+				return ""
+			}
+
+			content, err := fs.ReadFile(subFS, filepath.Join("icons", fmt.Sprintf("%s.svg", icon)))
+
+			if err != nil {
+				return ""
+			}
+
+			return string(content)
 		},
 	}
 }

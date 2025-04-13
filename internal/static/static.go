@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-//go:embed static/css/dist/* static/js/dist/* static/favicon.*
+//go:embed static/css/dist/* static/js/dist/* static/icons/* static/favicon.*
 var StaticFS embed.FS
 
 func GetStaticFS() (fs.FS, error) {

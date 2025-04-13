@@ -1,0 +1,7 @@
+{{- define "components/atoms/icon" -}}
+  {{- $iconContent := readfile .Icon -}}
+
+  {{- if $iconContent -}}
+    {{- $iconContent|raw -}}
+  {{- end -}}
+{{- end -}}
