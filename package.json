@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build:css": "tailwindcss -i ./internal/static/static/css/src/main.css -o ./internal/static/static/css/dist/main.css -m",
-    "build:js": "bun build ./internal/static/static/js/src/main.ts --outdir ./internal/static/static/js/dist --target browser --minify",
+    "build:js": "bun build ./internal/static/static/js/src/main.ts --outdir ./internal/static/static/js/dist --minify --banner '\"use strict\";'",
     "build": "bun run build:css && bun run build:js",
     "lint": "eslint . && prettier . --check",
     "lint:fix": "eslint . && prettier . --write"
