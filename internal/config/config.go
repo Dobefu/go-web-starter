@@ -24,6 +24,7 @@ type Log struct {
 
 type Site struct {
 	Name string `mapstructure:"name"`
+	Host string `mapstructure:"host"`
 }
 
 type Redis struct {
@@ -69,6 +70,7 @@ var DefaultConfig = Config{
 	},
 	Site: Site{
 		Name: "Go Web Starter",
+		Host: "http://localhost:4000",
 	},
 	Redis: Redis{
 		Enable:   true,
