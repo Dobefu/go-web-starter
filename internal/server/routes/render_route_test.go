@@ -17,7 +17,11 @@ func TestRenderRouteHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, r := gin.CreateTestContext(w)
 
+	req, _ := http.NewRequest("GET", "/", nil)
+	c.Request = req
+
 	viper.Set("site.name", "Test Site")
+	viper.Set("site.host", "http://localhost:8080")
 
 	t.Run("Debug Mode Rendering", func(t *testing.T) {
 		gin.SetMode(gin.DebugMode)
@@ -35,6 +39,7 @@ func TestRenderRouteHTML(t *testing.T) {
 		RenderRouteHTML(c, routeData)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "Test Page")
 	})
 
 	t.Run("Cached Template Rendering", func(t *testing.T) {
@@ -50,6 +55,8 @@ func TestRenderRouteHTML(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
+		req, _ := http.NewRequest("GET", "/", nil)
+		c.Request = req
 		RenderRouteHTML(c, routeData)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -69,6 +76,8 @@ func TestRenderRouteHTML(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
+		req, _ := http.NewRequest("GET", "/", nil)
+		c.Request = req
 		RenderRouteHTML(c, routeData)
 
 		assert.NotNil(t, c.Errors.Last())
