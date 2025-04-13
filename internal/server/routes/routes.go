@@ -9,4 +9,5 @@ func RegisterRoutes(router gin.IRouter) {
 	router.GET("/health", HealthCheck)
 
 	router.GET("/login", Login)
+	router.GET("/register", Register)
 }
