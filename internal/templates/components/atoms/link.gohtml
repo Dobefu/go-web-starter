@@ -1,0 +1,12 @@
+{{- define "components/atoms/link" -}}
+  <a
+    class="{{ .Classes }} text-sky-700"
+    href="{{ .Href }}"
+    {{- if eq .IsExternal false -}}
+    {{- else if or (eq .IsExternal true) (and .Href (or (startswith .Href "http://") (startswith .Href "https://"))) -}}
+      target="_blank" rel="noopener noreferrer"
+    {{- end -}}
+  >
+    {{- .Text -}}
+  </a>
+{{- end -}}
