@@ -1,6 +1,6 @@
 {{- define "components/atoms/link" -}}
   <a
-    class="{{ .Classes }} text-sky-700"
+    class="{{ .Classes }} text-sky-700 underline"
     href="{{ .Href }}"
     {{- if eq .IsExternal false -}}
     {{- else if or (eq .IsExternal true) (and .Href (or (startswith .Href "http://") (startswith .Href "https://"))) -}}
