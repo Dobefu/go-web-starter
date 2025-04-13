@@ -3,6 +3,8 @@ package utils
 import (
 	"html/template"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDict(t *testing.T) {
@@ -23,18 +25,11 @@ func TestDict(t *testing.T) {
 			got := dict(tt.args...)
 
 			if tt.want == nil {
-				if got != nil {
-					t.Errorf("dict() = %v, want nil", got)
-				}
-
+				assert.Nil(t, got)
 				return
 			}
 
-			for k, v := range tt.want {
-				if got[k] != v {
-					t.Errorf("dict()[%q] = %v, want %v", k, got[k], v)
-				}
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -47,15 +42,65 @@ func TestRaw(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"simple", "<p>Hello</p>", "<p>Hello</p>"},
-		{"empty", "", ""},
-		{"special", "<div>&lt;Hello&gt;</div>", "<div>&lt;Hello&gt;</div>"},
+		{"simple HTML", "<p>Hello</p>", "<p>Hello</p>"},
+		{"empty string", "", ""},
+		{"escaped HTML", "<div>&lt;Hello&gt;</div>", "<div>&lt;Hello&gt;</div>"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := string(raw(tt.in)); got != tt.want {
-				t.Errorf("raw() = %q, want %q", got, tt.want)
+			got := string(raw(tt.in))
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestStartsWith(t *testing.T) {
+	startswith := TemplateFuncMap()["startswith"].(func(string, string) bool)
+
+	tests := []struct {
+		name   string
+		s      string
+		prefix string
+		want   bool
+	}{
+		{"matching prefix", "hello world", "hello", true},
+		{"non-matching prefix", "hello world", "world", false},
+		{"empty string", "", "", true},
+		{"empty prefix", "hello", "", true},
+		{"case sensitive", "Hello", "hello", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := startswith(tt.s, tt.prefix)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestReadFile(t *testing.T) {
+	readfile := TemplateFuncMap()["readfile"].(func(string) string)
+
+	tests := []struct {
+		name string
+		icon string
+		want bool
+	}{
+		{"valid icon", "close", true},
+		{"nonexistent icon", "nonexistent", false},
+		{"empty icon name", "", false},
+		{"directory traversal attempt", "../../../etc/passwd", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := readfile(tt.icon)
+
+			if tt.want {
+				assert.NotEmpty(t, got, "readfile() should return non-empty string for valid icon")
+			} else {
+				assert.Empty(t, got, "readfile() should return empty string for invalid icon")
 			}
 		})
 	}
