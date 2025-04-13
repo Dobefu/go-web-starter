@@ -2,6 +2,8 @@ package routes
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
@@ -11,18 +13,27 @@ import (
 )
 
 func RenderRouteHTML(c *gin.Context, routeData RouteData) {
+	var canonical string
+
+	if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
+		canonical = fmt.Sprintf("%s%s", viper.GetString("site.host"), c.Request.URL.Path)
+		canonical = strings.TrimRight(canonical, "/")
+	}
+
 	data := struct {
 		RouteData
 		SiteName  string
 		Year      string
 		Nonce     string
 		BuildHash string
+		Canonical string
 	}{
 		RouteData: routeData,
 		SiteName:  viper.GetString("site.name"),
 		Year:      time.Now().Format("2006"),
 		Nonce:     c.GetString("nonce"),
 		BuildHash: config.BuildHash,
+		Canonical: canonical,
 	}
 
 	if gin.Mode() == gin.DebugMode {
@@ -39,11 +50,12 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		buf := new(bytes.Buffer)
 
 		if err := tmpl.Execute(buf, data); err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
-		c.Writer.Write(buf.Bytes())
+		_, _ = c.Writer.Write(buf.Bytes())
+
 		return
 	}
 

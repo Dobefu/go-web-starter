@@ -12,6 +12,10 @@
       <link rel="icon" type="image/x-icon" href="/static/favicon.ico?v={{ .BuildHash }}" />
       <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico?v={{ .BuildHash }}" />
 
+      {{- if .Canonical -}}
+        <link rel="canonical" href="{{ .Canonical }}" />
+      {{- end -}}
+
       <link href="/static/css/dist/main.css?v={{ .BuildHash }}" rel="stylesheet" />
     </head>
     <body class="flex min-h-full flex-col antialiased gap-4">
