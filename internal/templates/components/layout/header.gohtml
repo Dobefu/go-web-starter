@@ -1,14 +1,45 @@
 {{- define "components/layout/header" -}}
   <header class="p-4">
-    <nav class="flex justify-between">
-      <a class="text-xl font-medium" href="/">
+    <nav class="flex items-center justify-between gap-4" role="navigation">
+      <a class="py-2 text-xl font-medium" href="/">
         {{- .SiteName -}}
       </a>
 
-      <div class="flex gap-4">
-        <a href="/login">Log In</a>
-        <a href="/register">Register</a>
+      <div aria-expanded="true" class="group" id="mobile-menu">
+        <div
+          class="fixed inset-0 cursor-pointer bg-black/20 backdrop-blur-xs transition-all max-md:group-not-aria-expanded:pointer-events-none max-md:group-not-aria-expanded:opacity-0 md:hidden"
+          id="mobile-menu--backdrop"
+          tabindex="-1"
+        ></div>
+
+        <div
+          class="flex gap-4 bg-white max-md:absolute max-md:start-0 max-md:top-0 max-md:bottom-0 max-md:w-96 max-md:max-w-full max-md:flex-col max-md:p-4 max-md:transition-transform max-md:will-change-transform max-md:group-not-aria-expanded:-translate-x-full"
+        >
+          <div class="flex items-center justify-between md:hidden">
+            <a class="py-2 text-xl font-medium" href="/">
+              {{- .SiteName -}}
+            </a>
+
+            <button
+              class="flex cursor-pointer justify-end rounded-full p-2"
+              id="mobile-menu--close"
+            >
+              {{- template "components/atoms/icon" dict "Icon" "close" -}}
+            </button>
+          </div>
+
+          <a href="/login">Log In</a>
+          <a href="/register">Register</a>
+        </div>
       </div>
+
+      <button
+        aria-label="Toggle menu"
+        class="cursor-pointer rounded-full p-2 md:hidden"
+        id="mobile-menu--toggle"
+      >
+        {{- template "components/atoms/icon" dict "Icon" "dots-vertical" -}}
+      </button>
     </nav>
   </header>
 {{- end -}}
