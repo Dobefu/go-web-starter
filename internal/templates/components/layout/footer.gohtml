@@ -1,8 +1,20 @@
 {{- define "components/layout/footer" -}}
-  <footer class="p-4 text-center">
-    Copyright &copy;
-    {{- " " -}}
-    {{- .Year -}}{{- " " -}}
-    {{- .SiteName -}}
+  <footer class="py-4 text-center text-zinc-600">
+    <nav class="flex items-center justify-center gap-2 text-sm max-sm:flex-col">
+      <div>
+        Copyright &copy;
+        {{- " " -}}
+        {{- .Year -}}{{- " " -}}
+        {{- .SiteName -}}
+      </div>
+
+      <span class="text-zinc-300 max-sm:hidden">•</span>
+
+      <div>
+        Created by
+        {{- " " -}}
+        {{- template "components/atoms/link" dict "Text" "Connor van Spronssen" "Href" "https://cv.connor.nl" -}}
+      </div>
+    </nav>
   </footer>
 {{- end -}}
