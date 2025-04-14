@@ -1,20 +1,31 @@
 @import 'tailwindcss';
 
-[type='text'],
-input:where(:not([type])),
-[type='email'],
-[type='url'],
-[type='password'],
-[type='number'],
-[type='date'],
-[type='datetime-local'],
-[type='month'],
-[type='search'],
-[type='tel'],
-[type='time'],
-[type='week'],
-[multiple],
-textarea,
-select {
-  @apply rounded-md border border-zinc-400 px-3 py-2;
+@layer base {
+  [type='text'],
+  input:where(:not([type])),
+  [type='email'],
+  [type='url'],
+  [type='password'],
+  [type='number'],
+  [type='date'],
+  [type='datetime-local'],
+  [type='month'],
+  [type='search'],
+  [type='tel'],
+  [type='time'],
+  [type='week'],
+  [multiple],
+  textarea,
+  select {
+    @apply rounded-md border border-zinc-300 px-3 py-2;
+
+    &:disabled,
+    &:read-only {
+      @apply bg-zinc-100;
+    }
+
+    &:user-invalid {
+      @apply border-red-500 outline-red-600;
+    }
+  }
 }
