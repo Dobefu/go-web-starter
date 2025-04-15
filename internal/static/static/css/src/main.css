@@ -28,4 +28,8 @@
       @apply border-red-500 outline-red-600;
     }
   }
+
+  label {
+    @apply font-medium;
+  }
 }
