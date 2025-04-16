@@ -11,8 +11,8 @@ func Login(c *gin.Context) {
 		Template:   "pages/login",
 		HttpStatus: http.StatusOK,
 
-		Title:       "LOGIN",
-		Description: "",
+		Title:       "Log In",
+		Description: "Sign in to your account",
 	}
 
 	RenderRouteHTML(c, data)
