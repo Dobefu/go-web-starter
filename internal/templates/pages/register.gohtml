@@ -6,8 +6,9 @@
     class="mx-auto flex w-full max-w-xl flex-col gap-8 rounded-lg bg-white p-8 shadow"
     method="POST"
   >
-    {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
-
+    <div class="text-center">
+      {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
+    </div>
 
     <div class="flex flex-col gap-2">
       <label class="required" for="email">Email address</label>
@@ -21,12 +22,17 @@
 
     <div class="flex flex-col gap-2">
       <label class="required" for="password-confirm">Confirm password</label>
-      <input id="password-confirn" required type="password" />
+      <input id="password-confirm" required type="password" />
     </div>
 
     <div>
       <input class="btn" value="Register" type="submit" />
     </div>
+
+    <p class="text-center text-zinc-600">
+      Already have an account?
+      {{ template "components/atoms/link" dict "Text" "Log in" "Href" "/login" -}}
+    </p>
   </form>
 
   {{- template "layouts/default/foot" . -}}
