@@ -11,8 +11,8 @@ func Register(c *gin.Context) {
 		Template:   "pages/register",
 		HttpStatus: http.StatusOK,
 
-		Title:       "REGISTER",
-		Description: "",
+		Title:       "Register",
+		Description: "Register a new account",
 	}
 
 	RenderRouteHTML(c, data)
