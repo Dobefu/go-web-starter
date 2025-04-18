@@ -15,12 +15,31 @@
 
     <div class="flex flex-col gap-2">
       <label class="required" for="email">Email address</label>
-      <input autofocus id="email" name="email" required type="email" value="{{ .FormData.Values.email }}" />
+      <input
+        autofocus
+        id="email"
+        name="email"
+        required
+        type="email"
+        value="{{ .FormData.Values.email }}"
+      />
+
+      {{- if .FormData.Errors.email -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.email 0 }}
+        </div>
+      {{- end -}}
     </div>
 
     <div class="flex flex-col gap-2">
       <label class="required" for="password">Password</label>
       <input id="password" name="password" required type="password" />
+
+      {{- if .FormData.Errors.password -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.password 0 }}
+        </div>
+      {{- end -}}
     </div>
 
     <div>
