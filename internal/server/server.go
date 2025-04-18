@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
@@ -12,6 +13,8 @@ import (
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
 	"github.com/Dobefu/go-web-starter/internal/static"
 	"github.com/Dobefu/go-web-starter/internal/templates"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -108,9 +111,21 @@ func defaultNew(port int) ServerInterface {
 		redis: redisClient,
 	}
 
+	store := cookie.NewStore([]byte("secret"))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+		HttpOnly: true,
+		Secure:   gin.Mode() == gin.ReleaseMode,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	router.Use(sessions.Sessions("session", store))
+
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger())
 	router.Use(middleware.Database(srv.db))
+	router.Use(middleware.Flash())
 
 	if srv.redis != nil {
 		router.Use(middleware.Redis(srv.redis))
