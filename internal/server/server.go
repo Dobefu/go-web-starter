@@ -108,15 +108,15 @@ func defaultNew(port int) ServerInterface {
 		redis: redisClient,
 	}
 
+	router.Use(gin.Recovery())
+	router.Use(middleware.Logger())
 	router.Use(middleware.Database(srv.db))
 
 	if srv.redis != nil {
 		router.Use(middleware.Redis(srv.redis))
 	}
 
-	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimit(1000, time.Minute))
-	router.Use(middleware.Logger())
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.CacheHeaders())
