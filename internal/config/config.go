@@ -1,7 +1,10 @@
 package config
 
 import (
+	"encoding/base64"
+
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/gorilla/securecookie"
 	"github.com/spf13/viper"
 )
 
@@ -35,12 +38,17 @@ type Redis struct {
 	DB       int    `mapstructure:"db"`
 }
 
+type Session struct {
+	Secret string `mapstructure:"secret"`
+}
+
 type Config struct {
 	Server   Server   `mapstructure:"server"`
 	Database Database `mapstructure:"database"`
 	Log      Log      `mapstructure:"log"`
 	Site     Site     `mapstructure:"site"`
 	Redis    Redis    `mapstructure:"redis"`
+	Session  Session  `mapstructure:"session"`
 }
 
 func GetLogLevel() logger.Level {
@@ -78,5 +86,8 @@ var DefaultConfig = Config{
 		Port:     9736,
 		Password: "root",
 		DB:       0,
+	},
+	Session: Session{
+		Secret: base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)),
 	},
 }

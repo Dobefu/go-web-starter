@@ -64,6 +64,7 @@ func initConfig() {
 			viper.Set("redis.port", config.DefaultConfig.Redis.Port)
 			viper.Set("redis.password", config.DefaultConfig.Redis.Password)
 			viper.Set("redis.db", config.DefaultConfig.Redis.DB)
+			viper.Set("session.secret", config.DefaultConfig.Session.Secret)
 
 			dir := filepath.Dir(defaultConfigFile)
 

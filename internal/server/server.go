@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"time"
@@ -111,7 +112,14 @@ func defaultNew(port int) ServerInterface {
 		redis: redisClient,
 	}
 
-	store := cookie.NewStore([]byte("secret"))
+	sessionSecret := viper.GetString("session.secret")
+	decodedSecret, err := base64.StdEncoding.DecodeString(sessionSecret)
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to decode session secret: %v", err))
+	}
+
+	store := cookie.NewStore(decodedSecret)
 	store.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
