@@ -5,6 +5,7 @@ import (
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -40,6 +41,9 @@ func Flash() gin.HandlerFunc {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 
 	return func(c *gin.Context) {
+		v := validator.New()
+		v.SetContext(c)
+
 		c.Set("AddFlash", func(message string) {
 			session := sessions.Default(c)
 			session.AddFlash(message)

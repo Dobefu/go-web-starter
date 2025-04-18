@@ -6,6 +6,7 @@ import (
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +14,8 @@ import (
 func Login(c *gin.Context) {
 	v := validator.New()
 	v.SetContext(c)
+
+	csrfToken := middleware.GetCSRFToken(c)
 
 	data := RouteData{
 		Template:    "pages/login",
@@ -24,10 +27,12 @@ func Login(c *gin.Context) {
 			Errors:   v.GetSessionErrors(),
 			Messages: v.GetMessages(),
 		},
+		CSRFToken: csrfToken,
 	}
 
-	v.ClearSession()
 	RenderRouteHTML(c, data)
+
+	v.ClearSession()
 }
 
 func LoginPost(c *gin.Context) {

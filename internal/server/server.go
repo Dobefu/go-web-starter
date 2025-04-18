@@ -133,6 +133,7 @@ func defaultNew(port int) ServerInterface {
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger())
 	router.Use(middleware.Database(srv.db))
+	router.Use(middleware.CSRF())
 	router.Use(middleware.Flash())
 
 	if srv.redis != nil {

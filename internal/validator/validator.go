@@ -150,6 +150,8 @@ func (v *Validator) GetMessages() []string {
 		}
 	}
 
+	session.Save()
+
 	return result
 }
 
@@ -204,6 +206,9 @@ func (v *Validator) GetFormData() map[string]string {
 		return make(map[string]string)
 	}
 
+	session.Delete("form_data")
+	session.Save()
+
 	return formData
 }
 
@@ -225,6 +230,9 @@ func (v *Validator) GetSessionErrors() map[string][]string {
 		return make(map[string][]string)
 	}
 
+	session.Delete("errors")
+	session.Save()
+
 	return errors
 }
 
@@ -234,7 +242,10 @@ func (v *Validator) ClearSession() {
 	}
 
 	session := sessions.Default(v.context)
+
 	session.Delete("form_data")
 	session.Delete("errors")
+	session.Flashes()
+
 	session.Save()
 }

@@ -12,4 +12,5 @@ type RouteData struct {
 	Title       string
 	Description string
 	FormData    FormData
+	CSRFToken   string
 }
