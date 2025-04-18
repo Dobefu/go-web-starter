@@ -52,9 +52,7 @@ func LoginPost(c *gin.Context) {
 	password := v.GetFormValue(c.Request, "password")
 
 	v.Required("email", email)
-
 	v.Required("password", password)
-	v.MinLength("password", password, 8)
 
 	if v.HasErrors() {
 		v.SetFormData(map[string]string{
