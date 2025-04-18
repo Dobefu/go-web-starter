@@ -11,5 +11,6 @@ func RegisterRoutes(router gin.IRouter) {
 	router.GET("/robots.txt", RobotsTxt)
 
 	router.GET("/login", Login)
+	router.POST("/login", LoginPost)
 	router.GET("/register", Register)
 }
