@@ -23,6 +23,7 @@
       {{- template "components/layout/header" . -}}
 
       <main class="flex-1 px-4 flex mx-auto container flex-col gap-4" id="main-content">
+        {{- template "components/layout/messages" . -}}
 {{- end -}}
 
 {{- define "layouts/default/foot" -}}
