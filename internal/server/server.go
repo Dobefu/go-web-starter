@@ -4,10 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/redis"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/server/routes"
@@ -65,16 +67,22 @@ func getRedisConfig() config.Redis {
 }
 
 func defaultNew(port int) ServerInterface {
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+
 	if gin.Mode() != gin.TestMode {
 		gin.SetMode(gin.ReleaseMode)
+		log.Debug("Setting Gin to release mode", nil)
 	}
 
 	router := gin.New()
 	router.SetFuncMap(server_utils.TemplateFuncMap())
+	log.Trace("Initializing router with template functions", nil)
 
 	if err := templates.LoadTemplates(router); err != nil {
 		panic(fmt.Sprintf("Failed to load templates: %v", err))
 	}
+
+	log.Debug("Templates loaded successfully", nil)
 
 	staticFS, err := static.StaticFileSystem()
 
@@ -82,24 +90,30 @@ func defaultNew(port int) ServerInterface {
 		panic(fmt.Sprintf("Failed to initialize static file system: %v", err))
 	}
 
+	log.Trace("Static file system initialized", nil)
+
 	router.StaticFS("/static", staticFS)
 
 	dbConfig := getDatabaseConfig()
-	db, err := database.New(dbConfig, nil)
+	db, err := database.New(dbConfig, log)
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
 	}
 
+	log.Trace("Database connection established", nil)
+
 	redisConfig := getRedisConfig()
 	var redisClient redis.RedisInterface
 
 	if redisConfig.Enable {
-		redisClient, err = redis.New(redisConfig, nil)
+		redisClient, err = redis.New(redisConfig, log)
 
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize Redis: %v", err))
 		}
+
+		log.Trace("Redis connection established", nil)
 	}
 
 	srv := &Server{
@@ -138,15 +152,19 @@ func defaultNew(port int) ServerInterface {
 
 	if srv.redis != nil {
 		router.Use(middleware.Redis(srv.redis))
+		log.Trace("Redis middleware initialized", nil)
 	}
 
 	router.Use(middleware.RateLimit(1000, time.Minute))
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.CacheHeaders())
+	log.Trace("Middleware initialized", nil)
 
 	router.NoRoute(routes.NotFound)
 	srv.registerRoutes()
+	log.Trace("Routes registered", nil)
+
 	return srv
 }
 
