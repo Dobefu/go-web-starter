@@ -59,7 +59,22 @@ func (d *Redis) Get(ctx context.Context, key string) (*redisClient.StringCmd, er
 		return nil, errNotInitialized
 	}
 
-	return d.db.Get(ctx, key), nil
+	if d.logger != nil {
+		d.logger.Debug("Executing Redis GET", logger.Fields{
+			"key": key,
+		})
+	}
+
+	cmd := d.db.Get(ctx, key)
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis GET failed", logger.Fields{
+			"key":   key,
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, nil
 }
 
 func (d *Redis) Set(ctx context.Context, key string, value any, expiration time.Duration) (*redisClient.StatusCmd, error) {
@@ -67,7 +82,23 @@ func (d *Redis) Set(ctx context.Context, key string, value any, expiration time.
 		return nil, errNotInitialized
 	}
 
-	return d.db.Set(ctx, key, value, expiration), nil
+	if d.logger != nil {
+		d.logger.Debug("Executing Redis SET", logger.Fields{
+			"key":        key,
+			"expiration": expiration,
+		})
+	}
+
+	cmd := d.db.Set(ctx, key, value, expiration)
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis SET failed", logger.Fields{
+			"key":   key,
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, nil
 }
 
 func (d *Redis) GetRange(ctx context.Context, key string, start, end int64) (*redisClient.StringCmd, error) {
@@ -75,7 +106,24 @@ func (d *Redis) GetRange(ctx context.Context, key string, start, end int64) (*re
 		return nil, errNotInitialized
 	}
 
-	return d.db.GetRange(ctx, key, start, end), nil
+	if d.logger != nil {
+		d.logger.Debug("Executing Redis GETRANGE", logger.Fields{
+			"key":   key,
+			"start": start,
+			"end":   end,
+		})
+	}
+
+	cmd := d.db.GetRange(ctx, key, start, end)
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis GETRANGE failed", logger.Fields{
+			"key":   key,
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, nil
 }
 
 func (d *Redis) SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error) {
@@ -83,7 +131,23 @@ func (d *Redis) SetRange(ctx context.Context, key string, offset int64, value st
 		return nil, errNotInitialized
 	}
 
-	return d.db.SetRange(ctx, key, offset, value), nil
+	if d.logger != nil {
+		d.logger.Debug("Executing Redis SETRANGE", logger.Fields{
+			"key":    key,
+			"offset": offset,
+		})
+	}
+
+	cmd := d.db.SetRange(ctx, key, offset, value)
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis SETRANGE failed", logger.Fields{
+			"key":   key,
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, nil
 }
 
 func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
@@ -91,5 +155,17 @@ func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
 		return nil, errNotInitialized
 	}
 
-	return d.db.FlushDB(ctx), nil
+	if d.logger != nil {
+		d.logger.Info("Executing Redis FLUSHDB", nil)
+	}
+
+	cmd := d.db.FlushDB(ctx)
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis FLUSHDB failed", logger.Fields{
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, nil
 }
