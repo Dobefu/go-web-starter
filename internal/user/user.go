@@ -3,11 +3,35 @@ package user
 import "time"
 
 type User struct {
-	id        int       `json:"id"`
-	username  string    `json:"username"`
-	email     string    `json:"email"`
-	password  string    `json:"-"`
-	status    bool      `json:"status"`
-	createdAt time.Time `json:"created_at"`
-	updatedAt time.Time `json:"updated_at"`
+	id        int
+	username  string
+	email     string
+	password  string
+	status    bool
+	createdAt time.Time
+	updatedAt time.Time
+}
+
+func (user *User) GetID() (id int) {
+	return user.id
+}
+
+func (user *User) GetUsername() (username string) {
+	return user.username
+}
+
+func (user *User) GetEmail() (email string) {
+	return user.email
+}
+
+func (user *User) GetStatus() (status bool) {
+	return user.status
+}
+
+func (user *User) GetCreatedAt() (createdAt time.Time) {
+	return user.createdAt
+}
+
+func (user *User) GetUpdatedAt() (updatedAt time.Time) {
+	return user.updatedAt
 }
