@@ -59,7 +59,7 @@ func (s *RedisTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 	s.mockRedis = new(MockRedis)
 
-	log := logger.New(logger.InfoLevel, os.Stdout)
+	log := logger.New(config.GetLogLevel(), os.Stdout)
 
 	s.realRedis = &Redis{
 		db:     redisClient.NewClient(&redisClient.Options{}),
@@ -173,7 +173,7 @@ func (s *RedisTestSuite) TestNew() {
 		DB:       0,
 	}
 
-	log := logger.New(logger.InfoLevel, os.Stdout)
+	log := logger.New(config.GetLogLevel(), os.Stdout)
 
 	redis, err := New(cfg, log)
 	assert.NoError(s.T(), err)
