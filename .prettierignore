@@ -1,6 +1,7 @@
 # Package manager lockfiles.
 pnpm-lock.yaml
 package-lock.yml
+bun.lock
 
 # Layout files (will cause a "Found invalid node root") error otherwise.
 internal/templates/layouts/*.gohtml
