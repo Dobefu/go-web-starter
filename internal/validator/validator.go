@@ -24,7 +24,7 @@ type Validator struct {
 	fieldErrors map[string][]string
 	formErrors  []string
 	context     *gin.Context
-	marshal     func(interface{}) ([]byte, error)
+	marshal     func(any) ([]byte, error)
 }
 
 func New() *Validator {
