@@ -89,6 +89,9 @@ func initConfig() {
 
 		viper.Set("log.level", level)
 	}
+
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+	log.Trace("Starting the application", nil)
 }
 
 func Execute() {
