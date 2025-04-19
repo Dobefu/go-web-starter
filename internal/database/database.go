@@ -77,7 +77,23 @@ func (d *Database) Query(query string, args ...any) (*sql.Rows, error) {
 		return nil, errNotInitialized
 	}
 
-	return d.db.Query(query, args...)
+	if d.logger != nil {
+		d.logger.Debug("Executing database query", logger.Fields{
+			"query": query,
+			"args":  args,
+		})
+	}
+
+	rows, err := d.db.Query(query, args...)
+
+	if err != nil && d.logger != nil {
+		d.logger.Error("Database query failed", logger.Fields{
+			"query": query,
+			"error": err.Error(),
+		})
+	}
+
+	return rows, err
 }
 
 func (d *Database) QueryRow(query string, args ...any) (*sql.Row, error) {
@@ -85,7 +101,15 @@ func (d *Database) QueryRow(query string, args ...any) (*sql.Row, error) {
 		return nil, errNotInitialized
 	}
 
-	return d.db.QueryRow(query, args...), nil
+	if d.logger != nil {
+		d.logger.Debug("Executing database query row", logger.Fields{
+			"query": query,
+			"args":  args,
+		})
+	}
+
+	row := d.db.QueryRow(query, args...)
+	return row, nil
 }
 
 func (d *Database) Exec(query string, args ...any) (sql.Result, error) {
@@ -93,7 +117,23 @@ func (d *Database) Exec(query string, args ...any) (sql.Result, error) {
 		return nil, errNotInitialized
 	}
 
-	return d.db.Exec(query, args...)
+	if d.logger != nil {
+		d.logger.Debug("Executing database command", logger.Fields{
+			"query": query,
+			"args":  args,
+		})
+	}
+
+	result, err := d.db.Exec(query, args...)
+
+	if err != nil && d.logger != nil {
+		d.logger.Error("Database command failed", logger.Fields{
+			"query": query,
+			"error": err.Error(),
+		})
+	}
+
+	return result, err
 }
 
 func (d *Database) Begin() (*sql.Tx, error) {
