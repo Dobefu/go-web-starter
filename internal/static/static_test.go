@@ -13,7 +13,7 @@ func TestStaticFileSystem(t *testing.T) {
 
 	file, err := fs.Open("/favicon.ico")
 	assert.NoError(t, err)
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	stat, err := file.Stat()
 	assert.NoError(t, err)
