@@ -1,6 +1,10 @@
 package user
 
-import "time"
+import (
+	"time"
+
+	"github.com/Dobefu/go-web-starter/internal/database"
+)
 
 type User struct {
 	id        int
@@ -33,4 +37,36 @@ func (user *User) GetCreatedAt() (createdAt time.Time) {
 
 func (user *User) GetUpdatedAt() (updatedAt time.Time) {
 	return user.updatedAt
+}
+
+func (user *User) Save(db database.DatabaseInterface) (err error) {
+	row, err := db.QueryRow(`
+		INSERT INTO users (id, username, email, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (id) DO UPDATE SET
+			username = EXCLUDED.username,
+			email = EXCLUDED.email,
+			status = EXCLUDED.status,
+			updated_at = NOW()
+		RETURNING id
+	`,
+		user.id,
+		user.username,
+		user.email,
+		user.status,
+		user.createdAt,
+		user.updatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = row.Scan(&user.id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
