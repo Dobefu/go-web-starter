@@ -10,8 +10,9 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/csrf"
 )
+
+var csrfRandRead = rand.Read
 
 func CSRF() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -46,7 +47,7 @@ func GetCSRFToken(c *gin.Context) string {
 
 	if token == nil {
 		b := make([]byte, 32)
-		_, err := rand.Read(b)
+		_, err := csrfRandRead(b)
 
 		if err != nil {
 			log.Error("Failed to generate CSRF token", logger.Fields{"Error": err.Error()})
@@ -59,14 +60,4 @@ func GetCSRFToken(c *gin.Context) string {
 	}
 
 	return token.(string)
-}
-
-func GenerateCSRFToken(c *gin.Context) string {
-	token := csrf.Token(c.Request)
-
-	session := sessions.Default(c)
-	session.Set("csrf_token", token)
-	session.Save()
-
-	return token
 }
