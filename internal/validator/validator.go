@@ -5,9 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	sessionKeyFormData = "form_data"
+	sessionKeyErrors   = "errors"
+
+	msgFieldRequired  = "This field is required"
+	msgFormProcessing = "Failed to process form data"
 )
 
 type Validator struct {
@@ -15,6 +24,7 @@ type Validator struct {
 	fieldErrors map[string][]string
 	formErrors  []string
 	context     *gin.Context
+	marshal     func(interface{}) ([]byte, error)
 }
 
 func New() *Validator {
@@ -22,6 +32,7 @@ func New() *Validator {
 		isValid:     true,
 		fieldErrors: make(map[string][]string),
 		formErrors:  make([]string, 0),
+		marshal:     json.Marshal,
 	}
 }
 
@@ -61,39 +72,62 @@ func (v *Validator) HasErrors() bool {
 	return !v.isValid
 }
 
+func (v *Validator) getSession() sessions.Session {
+	if v.context == nil {
+		return nil
+	}
+
+	return sessions.Default(v.context)
+}
+
+func isValidUTF8Map(values map[string]string) bool {
+	for _, value := range values {
+		if !utf8.ValidString(value) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isValidUTF8Errors(errors map[string][]string) bool {
+	for _, errList := range errors {
+		for _, err := range errList {
+			if !utf8.ValidString(err) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 func (v *Validator) Clear() {
 	v.isValid = true
 	v.fieldErrors = make(map[string][]string)
 	v.formErrors = make([]string, 0)
 
-	if v.context != nil {
-		session := sessions.Default(v.context)
-
-		session.Delete("form_data")
-		session.Delete("errors")
-
+	if session := v.getSession(); session != nil {
+		session.Delete(sessionKeyFormData)
+		session.Delete(sessionKeyErrors)
 		session.Save()
 	}
 }
 
 func (v *Validator) CheckField(ok bool, field, message string) {
-	if ok {
-		return
+	if !ok {
+		v.AddFieldError(field, message)
 	}
-
-	v.AddFieldError(field, message)
 }
 
 func (v *Validator) CheckForm(ok bool, message string) {
-	if ok {
-		return
+	if !ok {
+		v.AddFormError(message)
 	}
-
-	v.AddFormError(message)
 }
 
 func (v *Validator) Required(field, value string) {
-	v.CheckField(strings.TrimSpace(value) != "", field, "This field is required")
+	v.CheckField(strings.TrimSpace(value) != "", field, msgFieldRequired)
 }
 
 func (v *Validator) MinLength(field, value string, min int) {
@@ -108,7 +142,7 @@ func (v *Validator) ValidateForm(r *http.Request) error {
 	err := r.ParseForm()
 
 	if err != nil {
-		v.AddFormError("Failed to process form data")
+		v.AddFormError(msgFormProcessing)
 		return err
 	}
 
@@ -136,11 +170,12 @@ func (v *Validator) SetFlash(message string) {
 }
 
 func (v *Validator) GetMessages() []string {
-	if v.context == nil {
+	session := v.getSession()
+
+	if session == nil {
 		return make([]string, 0)
 	}
 
-	session := sessions.Default(v.context)
 	messages := session.Flashes()
 	result := make([]string, 0, len(messages))
 
@@ -156,45 +191,45 @@ func (v *Validator) GetMessages() []string {
 }
 
 func (v *Validator) SetFormData(values map[string]string) {
-	if v.context == nil {
+	session := v.getSession()
+
+	if session == nil || !isValidUTF8Map(values) {
 		return
 	}
 
-	session := sessions.Default(v.context)
-	formDataJSON, err := json.Marshal(values)
+	formDataJSON, err := v.marshal(values)
 
 	if err != nil {
 		return
 	}
 
-	session.Set("form_data", string(formDataJSON))
+	session.Set(sessionKeyFormData, string(formDataJSON))
 	session.Save()
 }
 
 func (v *Validator) SetErrors() {
-	if v.context == nil {
+	session := v.getSession()
+
+	if session == nil || !isValidUTF8Errors(v.GetFieldErrors()) {
 		return
 	}
 
-	session := sessions.Default(v.context)
-	errorsJSON, err := json.Marshal(v.GetFieldErrors())
-
+	errorsJSON, err := v.marshal(v.GetFieldErrors())
 	if err != nil {
 		return
 	}
 
-	session.Set("errors", string(errorsJSON))
+	session.Set(sessionKeyErrors, string(errorsJSON))
 	session.Save()
 }
 
 func (v *Validator) GetFormData() map[string]string {
-	if v.context == nil {
+	session := v.getSession()
+	if session == nil {
 		return make(map[string]string)
 	}
 
-	session := sessions.Default(v.context)
-	formDataJSON := session.Get("form_data")
-
+	formDataJSON := session.Get(sessionKeyFormData)
 	if formDataJSON == nil {
 		return make(map[string]string)
 	}
@@ -206,20 +241,19 @@ func (v *Validator) GetFormData() map[string]string {
 		return make(map[string]string)
 	}
 
-	session.Delete("form_data")
+	session.Delete(sessionKeyFormData)
 	session.Save()
 
 	return formData
 }
 
 func (v *Validator) GetSessionErrors() map[string][]string {
-	if v.context == nil {
+	session := v.getSession()
+	if session == nil {
 		return make(map[string][]string)
 	}
 
-	session := sessions.Default(v.context)
-	errorsJSON := session.Get("errors")
-
+	errorsJSON := session.Get(sessionKeyErrors)
 	if errorsJSON == nil {
 		return make(map[string][]string)
 	}
@@ -230,22 +264,20 @@ func (v *Validator) GetSessionErrors() map[string][]string {
 		return make(map[string][]string)
 	}
 
-	session.Delete("errors")
+	session.Delete(sessionKeyErrors)
 	session.Save()
 
 	return errors
 }
 
 func (v *Validator) ClearSession() {
-	if v.context == nil {
-		return
+	session := v.getSession()
+
+	if session != nil {
+		session.Delete(sessionKeyFormData)
+		session.Delete(sessionKeyErrors)
+		session.Flashes()
+
+		session.Save()
 	}
-
-	session := sessions.Default(v.context)
-
-	session.Delete("form_data")
-	session.Delete("errors")
-	session.Flashes()
-
-	session.Save()
 }
