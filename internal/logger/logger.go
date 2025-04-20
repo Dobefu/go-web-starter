@@ -17,6 +17,15 @@ const (
 	InfoLevel
 	WarnLevel
 	ErrorLevel
+
+	timestampFormat = "01/Jan/2006:15:04:05 -0700"
+
+	levelTrace   = "TRACE"
+	levelDebug   = "DEBUG"
+	levelInfo    = "INFO"
+	levelWarn    = "WARN"
+	levelError   = "ERROR"
+	levelUnknown = "UNKNOWN"
 )
 
 type Fields map[string]any
@@ -47,7 +56,7 @@ func (l *Logger) log(level Level, msg string, fields Fields) {
 		return
 	}
 
-	timestamp := time.Now().UTC().Format("01/Jan/2006:15:04:05 -0700")
+	timestamp := time.Now().UTC().Format(timestampFormat)
 	levelStr := level.String()
 
 	timestampPart := color.New(color.FgHiBlack).Sprintf("[%s]", timestamp)
@@ -98,17 +107,17 @@ func (l *Logger) getLevelColor(level Level) *color.Color {
 func (l Level) String() string {
 	switch l {
 	case TraceLevel:
-		return "TRACE"
+		return levelTrace
 	case DebugLevel:
-		return "DEBUG"
+		return levelDebug
 	case InfoLevel:
-		return "INFO"
+		return levelInfo
 	case WarnLevel:
-		return "WARN"
+		return levelWarn
 	case ErrorLevel:
-		return "ERROR"
+		return levelError
 	default:
-		return "UNKNOWN"
+		return levelUnknown
 	}
 }
 
