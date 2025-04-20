@@ -42,7 +42,10 @@
       {{- end -}}
     </div>
 
-    <input class="btn me-auto" value="Log in" type="submit" />
+    <button class="btn me-auto flex items-center gap-2" type="submit">
+      {{- template "components/atoms/icon" dict "Icon" "login" "Classes" "size-5" -}}
+      Log in
+    </button>
 
     <p class="text-center text-zinc-600">
       No account yet?
