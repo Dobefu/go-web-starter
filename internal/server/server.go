@@ -22,6 +22,23 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	sessionCookieName = "session"
+	sessionPath       = "/"
+	sessionMaxAge     = 7 * 24 * time.Hour
+	sessionHttpOnly   = true
+	sessionSameSite   = http.SameSiteLaxMode
+
+	rateLimitRequests = 1000
+	rateLimitWindow   = time.Minute
+
+	errTemplatesLoad = "Failed to load templates: %v"
+	errStaticFSInit  = "Failed to initialize static file system: %v"
+	errDatabaseInit  = "Failed to initialize database: %v"
+	errRedisInit     = "Failed to initialize Redis: %v"
+	errSessionDecode = "Failed to decode session secret: %v"
+)
+
 type Router interface {
 	Run(addr ...string) error
 }
@@ -79,7 +96,7 @@ func defaultNew(port int) ServerInterface {
 	log.Trace("Initializing router with template functions", nil)
 
 	if err := templates.LoadTemplates(router); err != nil {
-		panic(fmt.Sprintf("Failed to load templates: %v", err))
+		panic(fmt.Sprintf(errTemplatesLoad, err))
 	}
 
 	log.Debug("Templates loaded successfully", nil)
@@ -87,7 +104,7 @@ func defaultNew(port int) ServerInterface {
 	staticFS, err := static.StaticFileSystem()
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize static file system: %v", err))
+		panic(fmt.Sprintf(errStaticFSInit, err))
 	}
 
 	log.Trace("Static file system initialized", nil)
@@ -98,7 +115,7 @@ func defaultNew(port int) ServerInterface {
 	db, err := database.New(dbConfig, log)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize database: %v", err))
+		panic(fmt.Sprintf(errDatabaseInit, err))
 	}
 
 	redisConfig := getRedisConfig()
@@ -108,7 +125,7 @@ func defaultNew(port int) ServerInterface {
 		redisClient, err = redis.New(redisConfig, log)
 
 		if err != nil {
-			panic(fmt.Sprintf("Failed to initialize Redis: %v", err))
+			panic(fmt.Sprintf(errRedisInit, err))
 		}
 
 		log.Trace("Redis connection established", nil)
@@ -128,19 +145,19 @@ func defaultNew(port int) ServerInterface {
 	decodedSecret, err := base64.StdEncoding.DecodeString(sessionSecret)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to decode session secret: %v", err))
+		panic(fmt.Sprintf(errSessionDecode, err))
 	}
 
 	store := cookie.NewStore(decodedSecret)
 	store.Options(sessions.Options{
-		Path:     "/",
-		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
-		HttpOnly: true,
+		Path:     sessionPath,
+		MaxAge:   int(sessionMaxAge.Seconds()),
+		HttpOnly: sessionHttpOnly,
 		Secure:   gin.Mode() == gin.ReleaseMode,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sessionSameSite,
 	})
 
-	router.Use(sessions.Sessions("session", store))
+	router.Use(sessions.Sessions(sessionCookieName, store))
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger())
@@ -153,7 +170,7 @@ func defaultNew(port int) ServerInterface {
 		log.Trace("Redis middleware initialized", nil)
 	}
 
-	router.Use(middleware.RateLimit(1000, time.Minute))
+	router.Use(middleware.RateLimit(rateLimitRequests, rateLimitWindow))
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.CacheHeaders())
