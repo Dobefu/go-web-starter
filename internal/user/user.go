@@ -7,6 +7,10 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/database"
 )
 
+const (
+	insertUserQuery = `INSERT INTO users (id, username, email, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email, status = EXCLUDED.status, updated_at = NOW() RETURNING id`
+)
+
 type User struct {
 	id        int
 	username  string
@@ -41,16 +45,7 @@ func (user *User) GetUpdatedAt() (updatedAt time.Time) {
 }
 
 func (user *User) Save(db database.DatabaseInterface) (err error) {
-	row := db.QueryRow(`
-		INSERT INTO users (id, username, email, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (id) DO UPDATE SET
-			username = EXCLUDED.username,
-			email = EXCLUDED.email,
-			status = EXCLUDED.status,
-			updated_at = NOW()
-		RETURNING id
-	`,
+	row := db.QueryRow(insertUserQuery,
 		user.id,
 		user.username,
 		user.email,
