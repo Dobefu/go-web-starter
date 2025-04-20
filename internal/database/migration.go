@@ -137,12 +137,7 @@ func MigrateUp(cfg config.Database) (err error) {
 func MigrateVersion(cfg config.Database) (version int, err error) {
 	dbConn, _ := New(cfg, nil)
 
-	row, err := dbConn.QueryRow("SELECT version FROM migrations LIMIT 1")
-
-	if err != nil {
-		return 0, err
-	}
-
+	row := dbConn.QueryRow("SELECT version FROM migrations LIMIT 1")
 	err = row.Scan(&version)
 
 	if err != nil {
@@ -168,13 +163,8 @@ func createMigrationsTable(dbConn *Database) (err error) {
 }
 
 func getMigrationState(dbConn *Database) (version int, dirty bool) {
-	row, err := dbConn.QueryRow("SELECT version,dirty FROM migrations LIMIT 1")
-
-	if err != nil {
-		return 0, true
-	}
-
-	err = row.Scan(&version, &dirty)
+	row := dbConn.QueryRow("SELECT version,dirty FROM migrations LIMIT 1")
+	err := row.Scan(&version, &dirty)
 
 	// If nothing is found, the table is empty.
 	// This is fine, since an initial migration will produce this result.
