@@ -17,6 +17,8 @@ const (
 
 	msgFieldRequired  = "This field is required"
 	msgFormProcessing = "Failed to process form data"
+	msgMinLength      = "This field must be at least %d characters long"
+	msgMaxLength      = "This field must be no more than %d characters long"
 )
 
 type Validator struct {
@@ -131,11 +133,11 @@ func (v *Validator) Required(field, value string) {
 }
 
 func (v *Validator) MinLength(field, value string, min int) {
-	v.CheckField(len(strings.TrimSpace(value)) >= min, field, fmt.Sprintf("This field must be at least %d characters long", min))
+	v.CheckField(len(strings.TrimSpace(value)) >= min, field, fmt.Sprintf(msgMinLength, min))
 }
 
 func (v *Validator) MaxLength(field, value string, max int) {
-	v.CheckField(len(strings.TrimSpace(value)) <= max, field, fmt.Sprintf("This field must be no more than %d characters long", max))
+	v.CheckField(len(strings.TrimSpace(value)) <= max, field, fmt.Sprintf(msgMaxLength, max))
 }
 
 func (v *Validator) ValidateForm(r *http.Request) error {
