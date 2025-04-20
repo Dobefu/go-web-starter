@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultConfigFileName = "config.toml"
+
 var (
 	cfgFile string
 	quiet   bool
@@ -33,7 +35,7 @@ func init() {
 }
 
 func initConfig() {
-	defaultConfigFile := "config.toml"
+	defaultConfigFile := defaultConfigFileName
 	viper.AddConfigPath(".")
 
 	if cfgFile != "" {
@@ -72,7 +74,7 @@ func initConfig() {
 				panic(err)
 			}
 
-			if err := viper.WriteConfigAs("config.toml"); err != nil {
+			if err := viper.WriteConfigAs(defaultConfigFileName); err != nil {
 				panic(err)
 			}
 		}
