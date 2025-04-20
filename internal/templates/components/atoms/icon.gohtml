@@ -2,6 +2,9 @@
   {{- $iconContent := readfile .Icon -}}
 
   {{- if $iconContent -}}
+    {{- if .Classes -}}
+      {{- $iconContent = replace $iconContent "<svg" (printf "<svg class=\"%s\"" .Classes) -}}
+    {{- end -}}
     {{- $iconContent|raw -}}
   {{- end -}}
 {{- end -}}
