@@ -101,6 +101,7 @@ func GetTemplateContent(path string) ([]byte, error) {
 }
 
 func preprocessTemplate(content string) string {
+	// Join split HTML attributes into a single line.
 	content = regexp.MustCompile(`\s{0,9}\n\s{0,9}([a-zA-Z-]{1,9}=)`).ReplaceAllString(content, " $1")
 
 	return content
