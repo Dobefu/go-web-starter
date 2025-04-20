@@ -35,6 +35,8 @@ func NewCSPConfig() CSPConfig {
 			},
 			scriptSrcKey: {
 				"strict-dynamic",
+
+				// The live reload script that Air injects into the page.
 				"sha256-shfdQDc5l63QrdRcyAdIpEYqlgxbfEfXuTNyWpgtloM=",
 			},
 			"style-src": {
