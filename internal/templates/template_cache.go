@@ -8,6 +8,8 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/cache"
 )
 
+const TemplateCacheDuration = 24 * time.Hour
+
 type TemplateCache struct {
 	cache *cache.Cache[*template.Template]
 }
@@ -32,7 +34,7 @@ func (tc *TemplateCache) Get(key string) (*template.Template, bool) {
 }
 
 func (tc *TemplateCache) Set(key string, tmpl *template.Template) {
-	tc.cache.Set(key, tmpl, (time.Hour * 24))
+	tc.cache.Set(key, tmpl, TemplateCacheDuration)
 }
 
 func (tc *TemplateCache) Clear() {
