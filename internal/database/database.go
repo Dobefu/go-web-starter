@@ -14,13 +14,14 @@ type DatabaseInterface interface {
 	Close() error
 	Ping() error
 	Query(query string, args ...any) (*sql.Rows, error)
-	QueryRow(query string, args ...any) (*sql.Row, error)
+	QueryRow(query string, args ...any) *sql.Row
 	Exec(query string, args ...any) (sql.Result, error)
 	Begin() (*sql.Tx, error)
+	Stats() sql.DBStats
 }
 
 type Database struct {
-	db     *sql.DB
+	db     DatabaseInterface
 	logger *logger.Logger
 }
 
@@ -96,9 +97,9 @@ func (d *Database) Query(query string, args ...any) (*sql.Rows, error) {
 	return rows, err
 }
 
-func (d *Database) QueryRow(query string, args ...any) (*sql.Row, error) {
+func (d *Database) QueryRow(query string, args ...any) *sql.Row {
 	if d.db == nil {
-		return nil, errNotInitialized
+		return nil
 	}
 
 	if d.logger != nil {
@@ -108,8 +109,7 @@ func (d *Database) QueryRow(query string, args ...any) (*sql.Row, error) {
 		})
 	}
 
-	row := d.db.QueryRow(query, args...)
-	return row, nil
+	return d.db.QueryRow(query, args...)
 }
 
 func (d *Database) Exec(query string, args ...any) (sql.Result, error) {
@@ -142,4 +142,12 @@ func (d *Database) Begin() (*sql.Tx, error) {
 	}
 
 	return d.db.Begin()
+}
+
+func (d *Database) Stats() sql.DBStats {
+	if d.db == nil {
+		return sql.DBStats{}
+	}
+
+	return d.db.Stats()
 }
