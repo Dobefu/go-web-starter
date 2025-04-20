@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const testPort = 4000
+
 type MockServer struct {
 	mock.Mock
 }
@@ -30,7 +32,7 @@ func TestServerCmdSuccess(t *testing.T) {
 	defer func() { server.DefaultNew = originalNew }()
 
 	cmd := &cobra.Command{}
-	cmd.Flags().Int("port", 4000, "")
+	cmd.Flags().Int("port", testPort, "")
 
 	assert.NotPanics(t, func() {
 		ServerCmd(cmd, []string{})
@@ -49,7 +51,7 @@ func TestServerCmdError(t *testing.T) {
 	defer func() { server.DefaultNew = originalNew }()
 
 	cmd := &cobra.Command{}
-	cmd.Flags().Int("port", 4000, "")
+	cmd.Flags().Int("port", testPort, "")
 
 	assert.NotPanics(t, func() {
 		ServerCmd(cmd, []string{})
