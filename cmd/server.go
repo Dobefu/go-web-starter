@@ -23,18 +23,21 @@ func init() {
 }
 
 func ServerCmd(cmd *cobra.Command, args []string) {
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+
 	port, err := cmd.Flags().GetInt("port")
 
 	if err != nil {
-		fmt.Printf("Failed to get port: %v\n", err)
+		log.Error("Failed to get port", logger.Fields{"error": err.Error()})
 		return
 	}
 
+	log.Debug("Creating new server instance", logger.Fields{"port": port})
 	srv := server.New(port)
 	err = runServer(srv, port)
 
 	if err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
+		log.Error("Failed to start server", logger.Fields{"error": err.Error()})
 	}
 }
 
