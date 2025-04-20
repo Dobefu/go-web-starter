@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -22,10 +23,18 @@ type RateLimiter struct {
 }
 
 func NewRateLimiter(capacity int, rate time.Duration) (*RateLimiter, error) {
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+
+	log.Debug("Initializing rate limiter", logger.Fields{
+		"capacity": capacity,
+		"rate":     rate.String(),
+	})
+
 	cfg := config.DefaultConfig.Redis
-	redisClient, err := redis.New(cfg, logger.New(config.GetLogLevel(), nil))
+	redisClient, err := redis.New(cfg, log)
 
 	if err != nil {
+		log.Error("Failed to create Redis client for rate limiter", logger.Fields{"error": err.Error()})
 		return nil, fmt.Errorf("failed to create Redis client: %w", err)
 	}
 
@@ -33,17 +42,24 @@ func NewRateLimiter(capacity int, rate time.Duration) (*RateLimiter, error) {
 		redis:    redisClient,
 		capacity: capacity,
 		rate:     rate,
-		logger:   logger.New(config.GetLogLevel(), nil),
+		logger:   log,
 		timeNow:  time.Now,
 	}, nil
 }
 
 func NewRateLimiterWithRedis(redisClient redis.RedisInterface, capacity int, rate time.Duration) *RateLimiter {
+	log := logger.New(config.GetLogLevel(), os.Stdout)
+
+	log.Info("Initializing rate limiter with existing Redis client", logger.Fields{
+		"capacity": capacity,
+		"rate":     rate.String(),
+	})
+
 	return &RateLimiter{
 		redis:    redisClient,
 		capacity: capacity,
 		rate:     rate,
-		logger:   logger.New(config.GetLogLevel(), nil),
+		logger:   log,
 		timeNow:  time.Now,
 	}
 }
@@ -177,13 +193,63 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		clientID := getClientIP(c)
+		clientIP := getClientIP(c)
+		key := fmt.Sprintf("rate_limit:%s", clientIP)
 
-		if !limiter.Allow(clientID) {
-			c.Status(http.StatusTooManyRequests)
+		limiter.logger.Debug("Checking rate limit", logger.Fields{
+			"client_ip": clientIP,
+			"path":      c.Request.URL.Path,
+		})
+
+		ctx := context.Background()
+		cmd, err := limiter.redis.Get(ctx, key)
+
+		if err != nil {
+			limiter.logger.Error("Failed to check rate limit", logger.Fields{
+				"client_ip": clientIP,
+				"error":     err.Error(),
+			})
+
+			c.Next()
+			return
+		}
+
+		count, err := cmd.Int64()
+		if err != nil {
+			count = 0
+		}
+
+		if count >= int64(limiter.capacity) {
+			limiter.logger.Warn("Rate limit exceeded", logger.Fields{
+				"client_ip": clientIP,
+				"path":      c.Request.URL.Path,
+				"count":     count,
+				"capacity":  limiter.capacity,
+			})
+
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Rate limit exceeded",
+			})
+
 			c.Abort()
 			return
 		}
+
+		_, err = limiter.redis.Set(ctx, key, count+1, limiter.rate)
+
+		if err != nil {
+			limiter.logger.Error("Failed to update rate limit counter", logger.Fields{
+				"client_ip": clientIP,
+				"error":     err.Error(),
+			})
+		}
+
+		limiter.logger.Debug("Rate limit check passed", logger.Fields{
+			"client_ip": clientIP,
+			"path":      c.Request.URL.Path,
+			"count":     count + 1,
+			"capacity":  limiter.capacity,
+		})
 
 		c.Next()
 	}
