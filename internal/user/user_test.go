@@ -3,12 +3,20 @@ package user
 import (
 	"database/sql"
 	"database/sql/driver"
-	"strings"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	testUserID        = 1
+	testUsername      = "Test User"
+	testEmail         = "test@user.com"
+	testCreatedAtUnix = 100000
+	testUpdatedAtUnix = 200000
 )
 
 type mockDatabase struct {
@@ -65,12 +73,12 @@ func (m *mockDatabaseWithQueryRowError) Stats() sql.DBStats {
 
 func setupUserTests() (user User) {
 	return User{
-		id:        1,
-		username:  "Test User",
-		email:     "test@user.com",
+		id:        testUserID,
+		username:  testUsername,
+		email:     testEmail,
 		status:    true,
-		createdAt: time.Unix(100000, 0),
-		updatedAt: time.Unix(200000, 0),
+		createdAt: time.Unix(testCreatedAtUnix, 0),
+		updatedAt: time.Unix(testUpdatedAtUnix, 0),
 	}
 }
 
@@ -79,7 +87,7 @@ func TestUserGetID(t *testing.T) {
 
 	user := setupUserTests()
 
-	assert.Equal(t, 1, user.GetID())
+	assert.Equal(t, testUserID, user.GetID())
 }
 
 func TestUserGetUsername(t *testing.T) {
@@ -87,7 +95,7 @@ func TestUserGetUsername(t *testing.T) {
 
 	user := setupUserTests()
 
-	assert.Equal(t, "Test User", user.GetUsername())
+	assert.Equal(t, testUsername, user.GetUsername())
 }
 
 func TestUserGetEmail(t *testing.T) {
@@ -95,7 +103,7 @@ func TestUserGetEmail(t *testing.T) {
 
 	user := setupUserTests()
 
-	assert.Equal(t, "test@user.com", user.GetEmail())
+	assert.Equal(t, testEmail, user.GetEmail())
 }
 
 func TestUserGetStatus(t *testing.T) {
@@ -111,7 +119,7 @@ func TestUserGetCreatedAt(t *testing.T) {
 
 	user := setupUserTests()
 
-	assert.Equal(t, time.Unix(100000, 0), user.GetCreatedAt())
+	assert.Equal(t, time.Unix(testCreatedAtUnix, 0), user.GetCreatedAt())
 }
 
 func TestUserGetUpdatedAt(t *testing.T) {
@@ -119,7 +127,7 @@ func TestUserGetUpdatedAt(t *testing.T) {
 
 	user := setupUserTests()
 
-	assert.Equal(t, time.Unix(200000, 0), user.GetUpdatedAt())
+	assert.Equal(t, time.Unix(testUpdatedAtUnix, 0), user.GetUpdatedAt())
 }
 
 func TestUserSaveQueryRowError(t *testing.T) {
@@ -149,18 +157,7 @@ func TestUserSaveErrScan(t *testing.T) {
 
 	user := setupUserTests()
 
-	expectedQuery := `
-		INSERT INTO users \(id, username, email, status, created_at, updated_at\)
-		VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)
-		ON CONFLICT \(id\) DO UPDATE SET
-			username = EXCLUDED\.username,
-			email = EXCLUDED\.email,
-			status = EXCLUDED\.status,
-			updated_at = NOW\(\)
-		RETURNING id
-	`
-
-	mock.ExpectQuery(strings.TrimSpace(expectedQuery)).
+	mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 		WithArgs(user.id, user.username, user.email, user.status, user.createdAt, user.updatedAt).
 		WillReturnError(sql.ErrNoRows)
 
@@ -181,18 +178,7 @@ func TestUserSaveSuccess(t *testing.T) {
 
 	user := setupUserTests()
 
-	expectedQuery := `
-		INSERT INTO users \(id, username, email, status, created_at, updated_at\)
-		VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)
-		ON CONFLICT \(id\) DO UPDATE SET
-			username = EXCLUDED\.username,
-			email = EXCLUDED\.email,
-			status = EXCLUDED\.status,
-			updated_at = NOW\(\)
-		RETURNING id
-	`
-
-	mock.ExpectQuery(strings.TrimSpace(expectedQuery)).
+	mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 		WithArgs(user.id, user.username, user.email, user.status, user.createdAt, user.updatedAt).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
