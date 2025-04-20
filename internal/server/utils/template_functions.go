@@ -53,5 +53,8 @@ func TemplateFuncMap() template.FuncMap {
 
 			return string(content)
 		},
+		"replace": func(s string, old string, new string) string {
+			return strings.ReplaceAll(s, old, new)
+		},
 	}
 }
