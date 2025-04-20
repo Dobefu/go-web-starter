@@ -28,14 +28,14 @@ func (m *mockDatabase) Query(query string, args ...any) (*sql.Rows, error) {
 	return nil, nil
 }
 
-func (m *mockDatabase) QueryRow(query string, args ...any) (*sql.Row, error) {
+func (m *mockDatabase) QueryRow(query string, args ...any) *sql.Row {
 	driverArgs := make([]driver.Value, len(args))
 
 	for i, arg := range args {
 		driverArgs[i] = arg
 	}
 
-	return m.db.QueryRow(query, args...), nil
+	return m.db.QueryRow(query, args...)
 }
 
 func (m *mockDatabase) Exec(query string, args ...any) (sql.Result, error) {
@@ -46,13 +46,21 @@ func (m *mockDatabase) Begin() (*sql.Tx, error) {
 	return nil, nil
 }
 
+func (m *mockDatabase) Stats() sql.DBStats {
+	return sql.DBStats{}
+}
+
 type mockDatabaseWithQueryRowError struct {
 	mockDatabase
 	queryRowError error
 }
 
-func (m *mockDatabaseWithQueryRowError) QueryRow(query string, args ...any) (*sql.Row, error) {
-	return nil, m.queryRowError
+func (m *mockDatabaseWithQueryRowError) QueryRow(query string, args ...any) *sql.Row {
+	return nil
+}
+
+func (m *mockDatabaseWithQueryRowError) Stats() sql.DBStats {
+	return sql.DBStats{}
 }
 
 func setupUserTests() (user User) {

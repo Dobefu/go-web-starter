@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/database"
@@ -40,7 +41,7 @@ func (user *User) GetUpdatedAt() (updatedAt time.Time) {
 }
 
 func (user *User) Save(db database.DatabaseInterface) (err error) {
-	row, err := db.QueryRow(`
+	row := db.QueryRow(`
 		INSERT INTO users (id, username, email, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (id) DO UPDATE SET
@@ -58,8 +59,8 @@ func (user *User) Save(db database.DatabaseInterface) (err error) {
 		user.updatedAt,
 	)
 
-	if err != nil {
-		return err
+	if row == nil {
+		return sql.ErrConnDone
 	}
 
 	err = row.Scan(&user.id)
