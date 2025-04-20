@@ -30,7 +30,10 @@
       />
     </div>
 
-    <input class="btn me-auto" value="Register" type="submit" />
+    <button class="btn me-auto flex items-center gap-2" type="submit">
+      {{- template "components/atoms/icon" dict "Icon" "register" "Classes" "size-5" -}}
+      Register
+    </button>
 
     <p class="text-center text-zinc-600">
       Already have an account?
