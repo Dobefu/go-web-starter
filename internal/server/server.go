@@ -101,8 +101,6 @@ func defaultNew(port int) ServerInterface {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
 	}
 
-	log.Trace("Database connection established", nil)
-
 	redisConfig := getRedisConfig()
 	var redisClient redis.RedisInterface
 
