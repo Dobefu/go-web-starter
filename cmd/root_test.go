@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ import (
 func setupRootCmdTest(t *testing.T) (*os.File, func()) {
 	tmpFile, err := os.CreateTemp("", "test_config_*.toml")
 	assert.NoError(t, err)
+
 	return tmpFile, func() { _ = os.Remove(tmpFile.Name()) }
 }
 
@@ -31,6 +33,19 @@ func TestInitConfigSuccess(t *testing.T) {
 	initConfig()
 
 	assert.Equal(t, tmpFile.Name(), viper.ConfigFileUsed())
+}
+
+func TestInitConfigVerbose(t *testing.T) {
+	originalCfgFile := cfgFile
+	defer func() { cfgFile = originalCfgFile }()
+
+	oldVerbose := verbose
+	defer func() { verbose = oldVerbose }()
+	verbose = 4
+
+	initConfig()
+
+	assert.Equal(t, logger.Level(0), config.GetLogLevel())
 }
 
 func TestRootExecuteSuccess(t *testing.T) {
@@ -106,14 +121,14 @@ func TestInitConfigDefaultCreation(t *testing.T) {
 
 	tmpDir, err := os.MkdirTemp("", "config_test_*")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalWd, err := os.Getwd()
 	assert.NoError(t, err)
 
 	err = os.Chdir(tmpDir)
 	assert.NoError(t, err)
-	defer os.Chdir(originalWd)
+	defer func() { _ = os.Chdir(originalWd) }()
 
 	cfgFile = ""
 
