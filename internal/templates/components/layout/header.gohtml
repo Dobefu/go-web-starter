@@ -28,8 +28,15 @@
             </button>
           </div>
 
-          <a href="/login">Log In</a>
-          <a href="/register">Register</a>
+          <a class="flex items-center gap-2" href="/login">
+            {{- template "components/atoms/icon" dict "Icon" "login" "Classes" "size-5" -}}
+            Log In
+          </a>
+
+          <a class="flex items-center gap-2" href="/register">
+            {{- template "components/atoms/icon" dict "Icon" "register" "Classes" "size-5" -}}
+            Register
+          </a>
         </div>
       </div>
 
