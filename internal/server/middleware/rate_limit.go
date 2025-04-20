@@ -194,37 +194,11 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		clientIP := getClientIP(c)
-		key := fmt.Sprintf("rate_limit:%s", clientIP)
 
-		limiter.logger.Debug("Checking rate limit", logger.Fields{
-			"client_ip": clientIP,
-			"path":      c.Request.URL.Path,
-		})
-
-		ctx := context.Background()
-		cmd, err := limiter.redis.Get(ctx, key)
-
-		if err != nil {
-			limiter.logger.Error("Failed to check rate limit", logger.Fields{
-				"client_ip": clientIP,
-				"error":     err.Error(),
-			})
-
-			c.Next()
-			return
-		}
-
-		count, err := cmd.Int64()
-		if err != nil {
-			count = 0
-		}
-
-		if count >= int64(limiter.capacity) {
+		if !limiter.Allow(clientIP) {
 			limiter.logger.Warn("Rate limit exceeded", logger.Fields{
 				"client_ip": clientIP,
 				"path":      c.Request.URL.Path,
-				"count":     count,
-				"capacity":  limiter.capacity,
 			})
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
@@ -234,22 +208,6 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		_, err = limiter.redis.Set(ctx, key, count+1, limiter.rate)
-
-		if err != nil {
-			limiter.logger.Error("Failed to update rate limit counter", logger.Fields{
-				"client_ip": clientIP,
-				"error":     err.Error(),
-			})
-		}
-
-		limiter.logger.Debug("Rate limit check passed", logger.Fields{
-			"client_ip": clientIP,
-			"path":      c.Request.URL.Path,
-			"count":     count + 1,
-			"capacity":  limiter.capacity,
-		})
 
 		c.Next()
 	}

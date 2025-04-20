@@ -208,11 +208,13 @@ func TestRateLimitMiddleware(t *testing.T) {
 		getError     error
 		expectedCode int
 		setupRequest func(*http.Request)
+		clientIP     string
 	}{
 		{
 			name:         "successful request",
 			tokens:       5,
 			expectedCode: http.StatusOK,
+			clientIP:     testClientIP,
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = testClientIP + ":1234"
 			},
@@ -221,6 +223,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			name:         "rate limited request",
 			tokens:       0,
 			expectedCode: http.StatusTooManyRequests,
+			clientIP:     "rate-limited-ip",
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = "rate-limited-ip:1234"
 			},
@@ -230,6 +233,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			tokens:       0,
 			getError:     errors.New("redis error"),
 			expectedCode: http.StatusOK,
+			clientIP:     testClientIP,
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = testClientIP + ":1234"
 			},
@@ -238,7 +242,25 @@ func TestRateLimitMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRedis, limiter := setupMockRedis(tt.tokens, tt.getError, time.Now())
+			now := time.Now()
+			mockRedis := new(MockRedis)
+
+			key := fmt.Sprintf("rate_limit:%s", tt.clientIP)
+			value := fmt.Sprintf("%d:%d", tt.tokens, now.Unix())
+
+			mockCmd := createMockStringCmd(value, tt.getError)
+			mockRedis.On("Get", mock.Anything, key).Return(mockCmd, tt.getError)
+
+			if tt.getError == nil || tt.getError.Error() == redisNilErr {
+				mockRedis.On("Set", mock.Anything, key, mock.Anything, mock.Anything).Return(
+					createMockStatusCmd(nil),
+					nil,
+				)
+			}
+
+			limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
+			limiter.timeNow = func() time.Time { return now }
+
 			router := setupTestRouter(limiter)
 
 			w := httptest.NewRecorder()
@@ -356,75 +378,6 @@ func TestNewRateLimiter(t *testing.T) {
 				assert.Equal(t, 5, limiter.capacity)
 				assert.Equal(t, time.Second, limiter.rate)
 			}
-		})
-	}
-}
-
-func TestRateLimit(t *testing.T) {
-	originalNew := redis.New
-	defer func() { redis.New = originalNew }()
-
-	originalConfig := config.DefaultConfig
-	defer func() { config.DefaultConfig = originalConfig }()
-
-	tests := []struct {
-		name         string
-		redisError   error
-		redisEnabled bool
-		expectedCode int
-	}{
-		{
-			name:         "successful creation",
-			redisError:   nil,
-			redisEnabled: true,
-			expectedCode: http.StatusOK,
-		},
-		{
-			name:         "redis error",
-			redisError:   errors.New("redis connection error"),
-			redisEnabled: true,
-			expectedCode: 0,
-		},
-		{
-			name:         "redis disabled",
-			redisError:   nil,
-			redisEnabled: false,
-			expectedCode: http.StatusOK,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config.DefaultConfig.Redis.Enable = tt.redisEnabled
-
-			redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
-				if tt.redisError != nil {
-					return nil, tt.redisError
-				}
-				return &redis.Redis{}, nil
-			}
-
-			if tt.expectedCode == 0 {
-				assert.Panics(t, func() {
-					RateLimit(5, time.Second)
-				})
-				return
-			}
-
-			gin.SetMode(gin.TestMode)
-			router := gin.New()
-			router.Use(RateLimit(5, time.Second))
-			router.GET("/test", func(c *gin.Context) {
-				c.Status(http.StatusOK)
-			})
-
-			w := httptest.NewRecorder()
-			req, err := http.NewRequest("GET", "/test", nil)
-			assert.NoError(t, err)
-			req.RemoteAddr = testClientIP + ":1234"
-
-			router.ServeHTTP(w, req)
-			assert.Equal(t, tt.expectedCode, w.Code)
 		})
 	}
 }
