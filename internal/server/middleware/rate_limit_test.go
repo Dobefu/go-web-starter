@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,8 +26,6 @@ const (
 
 type MockRedis struct {
 	mock.Mock
-	tokens   int
-	lastTime time.Time
 }
 
 func (m *MockRedis) Close() error {
@@ -85,56 +84,6 @@ func (m *MockRedis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error)
 	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
 }
 
-func setupMockRedis(tokens int, redisErr error, now time.Time) (*MockRedis, *RateLimiter) {
-	mockRedis := new(MockRedis)
-	mockRedis.tokens = tokens
-	mockRedis.lastTime = now
-
-	var mockCmd *redisClient.StringCmd
-
-	if redisErr != nil {
-		mockCmd = createMockStringCmd("", redisErr)
-	} else {
-		mockCmd = createMockStringCmd(fmt.Sprintf("%d:%d", tokens, now.Unix()), nil)
-	}
-
-	mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, redisErr)
-
-	if redisErr == nil || redisErr.Error() == redisNilErr {
-		mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-			createMockStatusCmd(nil),
-			nil,
-		)
-	}
-
-	limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
-	limiter.timeNow = func() time.Time { return now }
-
-	return mockRedis, limiter
-}
-
-func setupTestRouter(limiter *RateLimiter) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	router.Use(func(c *gin.Context) {
-		if !limiter.Allow(getClientIP(c)) {
-			c.Status(http.StatusTooManyRequests)
-			c.Abort()
-
-			return
-		}
-
-		c.Next()
-	})
-
-	router.GET("/test", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-
-	return router
-}
-
 func createMockStringCmd(val string, err error) *redisClient.StringCmd {
 	cmd := redisClient.NewStringCmd(context.Background())
 
@@ -157,12 +106,23 @@ func createMockStatusCmd(err error) *redisClient.StatusCmd {
 	return cmd
 }
 
+func setupTestRouter(handler gin.HandlerFunc) *gin.Engine {
+	router := gin.New()
+	router.Use(handler)
+	router.GET("/test", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+	return router
+}
+
 func TestRateLimiterAllow(t *testing.T) {
 	tests := []struct {
 		name          string
 		clientID      string
 		tokens        int
 		redisError    error
+		setError      error
+		malformedData bool
 		expectedAllow bool
 	}{
 		{
@@ -189,11 +149,74 @@ func TestRateLimiterAllow(t *testing.T) {
 			redisError:    errors.New("connection error"),
 			expectedAllow: true,
 		},
+		{
+			name:          "malformed data",
+			clientID:      testClientIP,
+			malformedData: true,
+			expectedAllow: true,
+		},
+		{
+			name:          "set error on no tokens",
+			clientID:      testClientIP,
+			tokens:        0,
+			setError:      errors.New("set error"),
+			expectedAllow: false,
+		},
+		{
+			name:          "set error on update",
+			clientID:      testClientIP,
+			tokens:        5,
+			setError:      errors.New("set error"),
+			expectedAllow: true,
+		},
+		{
+			name:          "token refill",
+			clientID:      testClientIP,
+			tokens:        0,
+			expectedAllow: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRedis, limiter := setupMockRedis(tt.tokens, tt.redisError, time.Now())
+			now := time.Now()
+			mockRedis := new(MockRedis)
+
+			var mockCmd *redisClient.StringCmd
+
+			if tt.malformedData {
+				mockCmd = createMockStringCmd("invalid:data", nil)
+				mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, nil)
+			} else if tt.redisError != nil {
+				if tt.redisError.Error() == redisNilErr {
+					mockCmd = createMockStringCmd("", tt.redisError)
+					mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, tt.redisError)
+					mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+						createMockStatusCmd(nil),
+						nil,
+					)
+				} else {
+					mockCmd = createMockStringCmd("", tt.redisError)
+					mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, tt.redisError)
+				}
+			} else {
+				lastUpdate := now
+
+				if tt.name == "token refill" {
+					lastUpdate = now.Add(-2 * time.Second)
+				}
+
+				mockCmd = createMockStringCmd(fmt.Sprintf("%d:%d", tt.tokens, lastUpdate.Unix()), nil)
+				mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, nil)
+				mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+					createMockStatusCmd(tt.setError),
+					tt.setError,
+				)
+			}
+
+			limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
+			limiter.timeNow = func() time.Time { return now }
+
 			result := limiter.Allow(tt.clientID)
 			assert.Equal(t, tt.expectedAllow, result)
 			mockRedis.AssertExpectations(t)
@@ -206,15 +229,15 @@ func TestRateLimitMiddleware(t *testing.T) {
 		name         string
 		tokens       int
 		getError     error
+		redisEnabled bool
 		expectedCode int
 		setupRequest func(*http.Request)
-		clientIP     string
 	}{
 		{
 			name:         "successful request",
 			tokens:       5,
+			redisEnabled: true,
 			expectedCode: http.StatusOK,
-			clientIP:     testClientIP,
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = testClientIP + ":1234"
 			},
@@ -222,8 +245,8 @@ func TestRateLimitMiddleware(t *testing.T) {
 		{
 			name:         "rate limited request",
 			tokens:       0,
+			redisEnabled: true,
 			expectedCode: http.StatusTooManyRequests,
-			clientIP:     "rate-limited-ip",
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = "rate-limited-ip:1234"
 			},
@@ -232,8 +255,16 @@ func TestRateLimitMiddleware(t *testing.T) {
 			name:         "redis error",
 			tokens:       0,
 			getError:     errors.New("redis error"),
+			redisEnabled: true,
 			expectedCode: http.StatusOK,
-			clientIP:     testClientIP,
+			setupRequest: func(req *http.Request) {
+				req.RemoteAddr = testClientIP + ":1234"
+			},
+		},
+		{
+			name:         "redis disabled",
+			redisEnabled: false,
+			expectedCode: http.StatusOK,
 			setupRequest: func(req *http.Request) {
 				req.RemoteAddr = testClientIP + ":1234"
 			},
@@ -242,38 +273,52 @@ func TestRateLimitMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			originalConfig := config.DefaultConfig
+			defer func() { config.DefaultConfig = originalConfig }()
+
+			config.DefaultConfig.Redis.Enable = tt.redisEnabled
+
 			now := time.Now()
 			mockRedis := new(MockRedis)
+			var handler gin.HandlerFunc
 
-			key := fmt.Sprintf("rate_limit:%s", tt.clientIP)
-			value := fmt.Sprintf("%d:%d", tt.tokens, now.Unix())
+			if tt.redisEnabled {
+				req, _ := http.NewRequest("GET", "/test", nil)
+				tt.setupRequest(req)
+				clientIP := strings.Split(req.RemoteAddr, ":")[0]
+				key := fmt.Sprintf("rate_limit:%s", clientIP)
+				value := fmt.Sprintf("%d:%d", tt.tokens, now.Unix())
 
-			mockCmd := createMockStringCmd(value, tt.getError)
-			mockRedis.On("Get", mock.Anything, key).Return(mockCmd, tt.getError)
+				mockCmd := createMockStringCmd(value, tt.getError)
+				mockRedis.On("Get", mock.Anything, key).Return(mockCmd, tt.getError)
 
-			if tt.getError == nil || tt.getError.Error() == redisNilErr {
-				mockRedis.On("Set", mock.Anything, key, mock.Anything, mock.Anything).Return(
-					createMockStatusCmd(nil),
-					nil,
-				)
+				if tt.getError == nil || tt.getError.Error() == redisNilErr {
+					mockRedis.On("Set", mock.Anything, key, mock.Anything, mock.Anything).Return(
+						createMockStatusCmd(nil),
+						nil,
+					)
+				}
+
+				limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
+				limiter.timeNow = func() time.Time { return now }
+
+				handler = limiter.Middleware()
+			} else {
+				handler = RateLimit(5, time.Second)
 			}
 
-			limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
-			limiter.timeNow = func() time.Time { return now }
-
-			router := setupTestRouter(limiter)
-
+			router := setupTestRouter(handler)
 			w := httptest.NewRecorder()
 			req, err := http.NewRequest("GET", "/test", nil)
 			assert.NoError(t, err)
 
-			if tt.setupRequest != nil {
-				tt.setupRequest(req)
-			}
-
+			tt.setupRequest(req)
 			router.ServeHTTP(w, req)
 			assert.Equal(t, tt.expectedCode, w.Code)
-			mockRedis.AssertExpectations(t)
+
+			if tt.redisEnabled {
+				mockRedis.AssertExpectations(t)
+			}
 		})
 	}
 }
@@ -377,6 +422,104 @@ func TestNewRateLimiter(t *testing.T) {
 				assert.NotNil(t, limiter)
 				assert.Equal(t, 5, limiter.capacity)
 				assert.Equal(t, time.Second, limiter.rate)
+			}
+		})
+	}
+}
+
+func TestRateLimit(t *testing.T) {
+	tests := []struct {
+		name         string
+		redisEnabled bool
+		tokens       int
+		redisError   error
+		expectedCode int
+		shouldPanic  bool
+	}{
+		{
+			name:         "redis disabled",
+			redisEnabled: false,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "redis enabled, request allowed",
+			redisEnabled: true,
+			tokens:       5,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "redis enabled, request rate limited",
+			redisEnabled: true,
+			tokens:       0,
+			expectedCode: http.StatusTooManyRequests,
+		},
+		{
+			name:         "redis error causes panic",
+			redisEnabled: true,
+			redisError:   errors.New("redis connection error"),
+			shouldPanic:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			originalConfig := config.DefaultConfig
+			defer func() { config.DefaultConfig = originalConfig }()
+
+			config.DefaultConfig.Redis.Enable = tt.redisEnabled
+
+			if tt.redisEnabled {
+				if tt.shouldPanic {
+					defer func() {
+						r := recover()
+						assert.NotNil(t, r)
+						panicMsg := fmt.Sprintf("%v", r)
+						assert.Contains(t, panicMsg, "Failed to create rate limiter")
+					}()
+
+					originalNew := redis.New
+					defer func() { redis.New = originalNew }()
+
+					redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
+						return nil, tt.redisError
+					}
+
+					RateLimit(5, time.Second)
+					return
+				}
+
+				mockRedis := new(MockRedis)
+				now := time.Now()
+
+				mockCmd := createMockStringCmd(fmt.Sprintf("%d:%d", tt.tokens, now.Unix()), nil)
+				mockRedis.On("Get", mock.Anything, mock.MatchedBy(func(k string) bool {
+					return strings.HasPrefix(k, "rate_limit:")
+				})).Return(mockCmd, nil)
+
+				mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(k string) bool {
+					return strings.HasPrefix(k, "rate_limit:")
+				}), mock.Anything, mock.Anything).Return(createMockStatusCmd(nil), nil)
+
+				limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
+				limiter.timeNow = func() time.Time { return now }
+
+				router := setupTestRouter(limiter.Middleware())
+				w := httptest.NewRecorder()
+				req, err := http.NewRequest("GET", "/test", nil)
+				assert.NoError(t, err)
+				req.RemoteAddr = testClientIP + ":1234"
+
+				router.ServeHTTP(w, req)
+				assert.Equal(t, tt.expectedCode, w.Code)
+			} else {
+				router := setupTestRouter(RateLimit(5, time.Second))
+				w := httptest.NewRecorder()
+				req, err := http.NewRequest("GET", "/test", nil)
+				assert.NoError(t, err)
+				req.RemoteAddr = testClientIP + ":1234"
+
+				router.ServeHTTP(w, req)
+				assert.Equal(t, http.StatusOK, w.Code)
 			}
 		})
 	}

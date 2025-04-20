@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -128,7 +129,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 		tokensToAdd := int(elapsed / rl.rate)
 
 		if tokensToAdd > 0 {
-			tokens = min(rl.capacity, tokens+tokensToAdd)
+			tokens = int(math.Min(float64(rl.capacity), float64(tokens+tokensToAdd)))
 			lastUpdate = now
 
 			rl.logger.Debug("Refilled tokens", logger.Fields{
@@ -177,6 +178,22 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	})
 
 	return true
+}
+
+func (rl *RateLimiter) Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !rl.Allow(getClientIP(c)) {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Rate limit exceeded",
+			})
+
+			c.Abort()
+
+			return
+		}
+
+		c.Next()
+	}
 }
 
 func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
