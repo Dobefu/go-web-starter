@@ -15,6 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const errRateLimitExceeded = "Rate limit exceeded"
+
 type RateLimiter struct {
 	redis    redis.RedisInterface
 	capacity int
@@ -151,7 +153,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 			})
 		}
 
-		rl.logger.Debug("Rate limit exceeded", logger.Fields{
+		rl.logger.Debug(errRateLimitExceeded, logger.Fields{
 			"tokens": tokens,
 			"key":    key,
 		})
@@ -184,7 +186,7 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !rl.Allow(getClientIP(c)) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Rate limit exceeded",
+				"error": errRateLimitExceeded,
 			})
 
 			c.Abort()
@@ -213,13 +215,13 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 		clientIP := getClientIP(c)
 
 		if !limiter.Allow(clientIP) {
-			limiter.logger.Warn("Rate limit exceeded", logger.Fields{
+			limiter.logger.Warn(errRateLimitExceeded, logger.Fields{
 				"client_ip": clientIP,
 				"path":      c.Request.URL.Path,
 			})
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Rate limit exceeded",
+				"error": errRateLimitExceeded,
 			})
 
 			c.Abort()
