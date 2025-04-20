@@ -3,9 +3,12 @@
 
 
   <form
+    action=""
     class="mx-auto flex w-full max-w-xl flex-col gap-8 rounded-lg bg-white p-8 shadow"
     method="POST"
   >
+    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}" />
+
     <div class="text-center">
       {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
     </div>
