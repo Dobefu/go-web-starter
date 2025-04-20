@@ -49,22 +49,24 @@ Fish:
 	Annotations: map[string]string{
 		"commandType": "main",
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		switch args[0] {
-		case "bash":
-			return cmd.Root().GenBashCompletion(os.Stdout)
-		case "zsh":
-			return cmd.Root().GenZshCompletion(os.Stdout)
-		case "fish":
-			return cmd.Root().GenFishCompletion(os.Stdout, true)
-		case "powershell":
-			return cmd.Root().GenPowerShellCompletion(os.Stdout)
-		default:
-			return fmt.Errorf("unsupported shell type %q", args[0])
-		}
-	},
+	RunE: runCompletionCmd,
 }
 
 func init() {
 	rootCmd.AddCommand(completionCmd)
+}
+
+func runCompletionCmd(cmd *cobra.Command, args []string) error {
+	switch args[0] {
+	case "bash":
+		return cmd.Root().GenBashCompletion(os.Stdout)
+	case "zsh":
+		return cmd.Root().GenZshCompletion(os.Stdout)
+	case "fish":
+		return cmd.Root().GenFishCompletion(os.Stdout, true)
+	case "powershell":
+		return cmd.Root().GenPowerShellCompletion(os.Stdout)
+	default:
+		return fmt.Errorf("unsupported shell type %q", args[0])
+	}
 }
