@@ -344,12 +344,7 @@ func TestDatabaseOperations(t *testing.T) {
 			name: "QueryRow Success",
 			operation: func() error {
 				var id int
-				row, err := database.QueryRow("SELECT id FROM test")
-
-				if err != nil {
-					return err
-				}
-
+				row := database.QueryRow("SELECT id FROM test")
 				return row.Scan(&id)
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
@@ -362,12 +357,7 @@ func TestDatabaseOperations(t *testing.T) {
 			name: "QueryRow Error",
 			operation: func() error {
 				var id int
-				row, err := database.QueryRow("SELECT id FROM test")
-
-				if err != nil {
-					return err
-				}
-
+				row := database.QueryRow("SELECT id FROM test")
 				return row.Scan(&id)
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
