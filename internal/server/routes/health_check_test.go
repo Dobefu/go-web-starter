@@ -37,12 +37,12 @@ func (m *MockDatabase) Query(query string, args ...any) (*sql.Rows, error) {
 	return mockArgs.Get(0).(*sql.Rows), mockArgs.Error(1)
 }
 
-func (m *MockDatabase) QueryRow(query string, args ...any) (*sql.Row, error) {
+func (m *MockDatabase) QueryRow(query string, args ...any) *sql.Row {
 	mockArgs := m.Called(query, args)
 	if mockArgs.Get(0) == nil {
-		return nil, mockArgs.Error(1)
+		return nil
 	}
-	return mockArgs.Get(0).(*sql.Row), mockArgs.Error(1)
+	return mockArgs.Get(0).(*sql.Row)
 }
 
 func (m *MockDatabase) Exec(query string, args ...any) (sql.Result, error) {
@@ -59,6 +59,11 @@ func (m *MockDatabase) Begin() (*sql.Tx, error) {
 		return nil, mockArgs.Error(1)
 	}
 	return mockArgs.Get(0).(*sql.Tx), mockArgs.Error(1)
+}
+
+func (m *MockDatabase) Stats() sql.DBStats {
+	mockArgs := m.Called()
+	return mockArgs.Get(0).(sql.DBStats)
 }
 
 func TestHealthCheckSuccess(t *testing.T) {
