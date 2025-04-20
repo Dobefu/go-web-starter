@@ -105,3 +105,9 @@ func TestReadFile(t *testing.T) {
 		})
 	}
 }
+
+func TestReplace(t *testing.T) {
+	replace := TemplateFuncMap()["replace"].(func(s string, old string, new string) string)
+
+	assert.Equal(t, "toast", replace("test", "e", "oa"))
+}
