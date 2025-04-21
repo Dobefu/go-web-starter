@@ -106,6 +106,32 @@ func FindByEmail(db database.DatabaseInterface, email string) (*User, error) {
 	return user, nil
 }
 
+func FindByID(db database.DatabaseInterface, id int) (*User, error) {
+	user := &User{}
+	findUserByIDQuery := `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`
+	row := db.QueryRow(findUserByIDQuery, id)
+
+	err := row.Scan(
+		&user.id,
+		&user.username,
+		&user.email,
+		&user.password,
+		&user.status,
+		&user.createdAt,
+		&user.updatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user with ID %d not found", id)
+		}
+
+		return nil, fmt.Errorf("error finding user by ID: %w", err)
+	}
+
+	return user, nil
+}
+
 func HashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
