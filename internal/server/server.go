@@ -32,11 +32,11 @@ const (
 	rateLimitRequests = 1000
 	rateLimitWindow   = time.Minute
 
-	errTemplatesLoad = "Failed to load templates: %v"
-	errStaticFSInit  = "Failed to initialize static file system: %v"
-	errDatabaseInit  = "Failed to initialize database: %v"
-	errRedisInit     = "Failed to initialize Redis: %v"
-	errSessionDecode = "Failed to decode session secret: %v"
+	errTemplatesLoad = "failed to load templates: %v"
+	errStaticFSInit  = "failed to initialize static file system: %v"
+	errDatabaseInit  = "failed to initialize database: %v"
+	errRedisInit     = "failed to initialize Redis: %v"
+	errSessionDecode = "failed to decode session secret: %v"
 )
 
 type Router interface {
@@ -61,7 +61,7 @@ type routerWrapper struct {
 	gin.IRouter
 }
 
-type NewServerFunc func(port int) ServerInterface
+type NewServerFunc func(port int) (ServerInterface, error)
 
 func getDatabaseConfig() config.Database {
 	return config.Database{
@@ -83,7 +83,7 @@ func getRedisConfig() config.Redis {
 	}
 }
 
-func defaultNew(port int) ServerInterface {
+func defaultNew(port int) (ServerInterface, error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 
 	if gin.Mode() != gin.TestMode {
@@ -96,7 +96,7 @@ func defaultNew(port int) ServerInterface {
 	log.Trace("Initializing router with template functions", nil)
 
 	if err := templates.LoadTemplates(router); err != nil {
-		panic(fmt.Sprintf(errTemplatesLoad, err))
+		return nil, fmt.Errorf(errTemplatesLoad, err)
 	}
 
 	log.Debug("Templates loaded successfully", nil)
@@ -104,7 +104,7 @@ func defaultNew(port int) ServerInterface {
 	staticFS, err := static.StaticFileSystem()
 
 	if err != nil {
-		panic(fmt.Sprintf(errStaticFSInit, err))
+		return nil, fmt.Errorf(errStaticFSInit, err)
 	}
 
 	log.Trace("Static file system initialized", nil)
@@ -115,7 +115,7 @@ func defaultNew(port int) ServerInterface {
 	db, err := database.New(dbConfig, log)
 
 	if err != nil {
-		panic(fmt.Sprintf(errDatabaseInit, err))
+		return nil, fmt.Errorf(errDatabaseInit, err)
 	}
 
 	redisConfig := getRedisConfig()
@@ -125,7 +125,7 @@ func defaultNew(port int) ServerInterface {
 		redisClient, err = redis.New(redisConfig, log)
 
 		if err != nil {
-			panic(fmt.Sprintf(errRedisInit, err))
+			return nil, fmt.Errorf(errRedisInit, err)
 		}
 
 		log.Trace("Redis connection established", nil)
@@ -145,7 +145,7 @@ func defaultNew(port int) ServerInterface {
 	decodedSecret, err := base64.StdEncoding.DecodeString(sessionSecret)
 
 	if err != nil {
-		panic(fmt.Sprintf(errSessionDecode, err))
+		return nil, fmt.Errorf(errSessionDecode, err)
 	}
 
 	store := cookie.NewStore(decodedSecret)
@@ -180,12 +180,12 @@ func defaultNew(port int) ServerInterface {
 	srv.registerRoutes()
 	log.Trace("Routes registered", nil)
 
-	return srv
+	return srv, nil
 }
 
 var DefaultNew NewServerFunc = defaultNew
 
-func New(port int) ServerInterface {
+func New(port int) (ServerInterface, error) {
 	return DefaultNew(port)
 }
 
