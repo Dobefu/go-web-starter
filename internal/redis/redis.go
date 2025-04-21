@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
@@ -24,7 +25,10 @@ type Redis struct {
 	logger *logger.Logger
 }
 
-var errNotInitialized error = fmt.Errorf("redis not initialized")
+var (
+	errNotInitialized = fmt.Errorf("Redis is not initialized")
+	errClientClosed   = fmt.Errorf("redis: client is closed")
+)
 
 var New = func(cfg config.Redis, log *logger.Logger) (*Redis, error) {
 	db := redisClient.NewClient(&redisClient.Options{
@@ -44,6 +48,16 @@ var New = func(cfg config.Redis, log *logger.Logger) (*Redis, error) {
 	}, nil
 }
 
+func (d *Redis) isClientClosed() bool {
+	if d.db == nil {
+		return false
+	}
+
+	_, err := d.db.Ping(context.Background()).Result()
+
+	return err != nil && strings.Contains(err.Error(), "redis: client is closed")
+}
+
 func (d *Redis) Close() error {
 	if d.db == nil {
 		return errNotInitialized
@@ -57,6 +71,10 @@ func (d *Redis) Get(ctx context.Context, key string) (*redisClient.StringCmd, er
 		return nil, errNotInitialized
 	}
 
+	if d.isClientClosed() {
+		return nil, errClientClosed
+	}
+
 	if d.logger != nil {
 		d.logger.Debug("Executing Redis GET", logger.Fields{
 			"key": key,
@@ -64,12 +82,23 @@ func (d *Redis) Get(ctx context.Context, key string) (*redisClient.StringCmd, er
 	}
 
 	cmd := d.db.Get(ctx, key)
+	err := cmd.Err()
 
-	if cmd.Err() != nil && d.logger != nil {
-		d.logger.Error("Redis GET failed", logger.Fields{
-			"key":   key,
-			"error": cmd.Err().Error(),
-		})
+	if err != nil {
+		if err == redisClient.Nil {
+			if d.logger != nil {
+				d.logger.Debug("Redis key not found", logger.Fields{
+					"key": key,
+				})
+			}
+		} else if d.logger != nil {
+			d.logger.Error("Redis GET failed", logger.Fields{
+				"key":   key,
+				"error": err.Error(),
+			})
+		}
+
+		return nil, err
 	}
 
 	return cmd, nil
@@ -78,6 +107,10 @@ func (d *Redis) Get(ctx context.Context, key string) (*redisClient.StringCmd, er
 func (d *Redis) Set(ctx context.Context, key string, value any, expiration time.Duration) (*redisClient.StatusCmd, error) {
 	if d.db == nil {
 		return nil, errNotInitialized
+	}
+
+	if d.isClientClosed() {
+		return nil, errClientClosed
 	}
 
 	if d.logger != nil {
@@ -96,12 +129,16 @@ func (d *Redis) Set(ctx context.Context, key string, value any, expiration time.
 		})
 	}
 
-	return cmd, nil
+	return cmd, cmd.Err()
 }
 
 func (d *Redis) GetRange(ctx context.Context, key string, start, end int64) (*redisClient.StringCmd, error) {
 	if d.db == nil {
 		return nil, errNotInitialized
+	}
+
+	if d.isClientClosed() {
+		return nil, errClientClosed
 	}
 
 	if d.logger != nil {
@@ -121,12 +158,16 @@ func (d *Redis) GetRange(ctx context.Context, key string, start, end int64) (*re
 		})
 	}
 
-	return cmd, nil
+	return cmd, cmd.Err()
 }
 
 func (d *Redis) SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error) {
 	if d.db == nil {
 		return nil, errNotInitialized
+	}
+
+	if d.isClientClosed() {
+		return nil, errClientClosed
 	}
 
 	if d.logger != nil {
@@ -145,12 +186,16 @@ func (d *Redis) SetRange(ctx context.Context, key string, offset int64, value st
 		})
 	}
 
-	return cmd, nil
+	return cmd, cmd.Err()
 }
 
 func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
 	if d.db == nil {
 		return nil, errNotInitialized
+	}
+
+	if d.isClientClosed() {
+		return nil, errClientClosed
 	}
 
 	if d.logger != nil {
@@ -165,5 +210,5 @@ func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
 		})
 	}
 
-	return cmd, nil
+	return cmd, cmd.Err()
 }
