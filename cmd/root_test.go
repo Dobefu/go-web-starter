@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"testing"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -132,10 +135,67 @@ func TestInitConfigDefaultCreation(t *testing.T) {
 
 	cfgFile = ""
 
+	viper.Reset()
+	cobra.OnInitialize(initConfig)
+
 	initConfig()
 
-	_, err = os.Stat("config.toml")
+	createdConfigFile := defaultConfigFileName
+	_, err = os.Stat(createdConfigFile)
+	assert.NoError(t, err, "config.toml should be created")
+
+	contentBytes, err := os.ReadFile(createdConfigFile)
+	assert.NoError(t, err, "should be able to read created config.toml")
+
+	var createdConfig config.Config
+	err = toml.Unmarshal(contentBytes, &createdConfig)
+	assert.NoError(t, err, "created config.toml should be valid TOML")
+
+	assert.Equal(t, config.DefaultConfig, createdConfig, "created config.toml content should match DefaultConfig")
+}
+
+func captureStderr(f func()) (string, error) {
+	originalStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		return "", err
+	}
+	os.Stderr = w
+
+	f()
+
+	w.Close()
+	os.Stderr = originalStderr
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, r)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func TestInitConfigReadError(t *testing.T) {
+	originalCfgFile := cfgFile
+	defer func() { cfgFile = originalCfgFile }()
+
+	tmpFile, err := os.CreateTemp("", "malformed_config_*.toml")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	_, err = tmpFile.WriteString("[invalid toml content = ?")
+	assert.NoError(t, err)
+	err = tmpFile.Close()
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, config.DefaultConfig)
+	cfgFile = tmpFile.Name()
+
+	viper.Reset()
+	cobra.OnInitialize(initConfig)
+
+	stderrOutput, err := captureStderr(initConfig)
+	assert.NoError(t, err, "stderr capture should not fail")
+
+	assert.Contains(t, stderrOutput, "Error reading config file", "stderr should contain config reading error")
 }
