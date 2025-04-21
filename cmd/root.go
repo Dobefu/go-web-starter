@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -51,36 +53,32 @@ func initConfig() {
 		_, err := os.Stat(defaultConfigFile)
 
 		if os.IsNotExist(err) {
-			viper.Set("database.host", config.DefaultConfig.Database.Host)
-			viper.Set("database.port", config.DefaultConfig.Database.Port)
-			viper.Set("database.user", config.DefaultConfig.Database.User)
-			viper.Set("database.password", config.DefaultConfig.Database.Password)
-			viper.Set("database.dbname", config.DefaultConfig.Database.DBName)
-			viper.Set("server.port", config.DefaultConfig.Server.Port)
-			viper.Set("server.host", config.DefaultConfig.Server.Host)
-			viper.Set("log.level", config.DefaultConfig.Log.Level)
-			viper.Set("site.name", config.DefaultConfig.Site.Name)
-			viper.Set("site.host", config.DefaultConfig.Site.Host)
-			viper.Set("redis.enable", config.DefaultConfig.Redis.Enable)
-			viper.Set("redis.host", config.DefaultConfig.Redis.Host)
-			viper.Set("redis.port", config.DefaultConfig.Redis.Port)
-			viper.Set("redis.password", config.DefaultConfig.Redis.Password)
-			viper.Set("redis.db", config.DefaultConfig.Redis.DB)
-			viper.Set("session.secret", config.DefaultConfig.Session.Secret)
-
 			dir := filepath.Dir(defaultConfigFile)
 
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				panic(err)
 			}
 
-			if err := viper.WriteConfigAs(defaultConfigFileName); err != nil {
-				panic(err)
+			configFileContent, err := toml.Marshal(config.DefaultConfig)
+
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal default config: %w", err))
+			}
+
+			if err := os.WriteFile(defaultConfigFile, configFileContent, 0666); err != nil {
+				panic(fmt.Errorf("failed to write default config file: %w", err))
 			}
 		}
 	}
 
-	_ = viper.ReadInConfig()
+	err := viper.ReadInConfig()
+
+	if err != nil {
+		if !os.IsNotExist(err) {
+			tmpLog := logger.New(logger.WarnLevel, os.Stderr)
+			tmpLog.Error("Error reading config file", map[string]any{"error": err.Error()})
+		}
+	}
 
 	if verbose > 0 {
 		level := logger.DebugLevel
