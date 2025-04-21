@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -17,25 +18,30 @@ type RedisTestSuite struct {
 	suite.Suite
 	ctx    context.Context
 	logger *logger.Logger
+	client *Redis
 }
 
 func (s *RedisTestSuite) SetupTest() {
 	s.ctx = context.Background()
 	s.logger = logger.New(config.GetLogLevel(), os.Stdout)
+
+	s.client = &Redis{
+		db:     redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
+		logger: s.logger,
+	}
 }
 
-func (s *RedisTestSuite) newRedisClient() *Redis {
-	return &Redis{
-		db:     redisClient.NewClient(&redisClient.Options{Addr: "localhost:6379"}),
-		logger: s.logger,
+func (s *RedisTestSuite) TearDownTest() {
+	if s.client != nil && s.client.db != nil {
+		s.client.Close()
 	}
 }
 
 func (s *RedisTestSuite) TestNew() {
 	cfg := config.Redis{
 		Host:     "localhost",
-		Port:     6379,
-		Password: "password",
+		Port:     9736,
+		Password: "root",
 		DB:       0,
 	}
 
@@ -60,8 +66,6 @@ func (s *RedisTestSuite) TestNew() {
 		tt := tt
 
 		s.Run(tt.name, func() {
-			s.T().Parallel()
-
 			redis, err := New(cfg, tt.logger)
 
 			if tt.wantErr {
@@ -78,101 +82,318 @@ func (s *RedisTestSuite) TestNew() {
 	}
 }
 
-func (s *RedisTestSuite) TestClose() {
-	tests := []struct {
-		name    string
-		setup   func() *Redis
-		wantErr bool
-	}{
-		{
-			name: "success",
-			setup: func() *Redis {
-				return s.newRedisClient()
-			},
-			wantErr: false,
-		},
-		{
-			name: "already closed",
-			setup: func() *Redis {
-				redis := s.newRedisClient()
-				redis.db.Close()
-
-				return redis
-			},
-			wantErr: true,
-		},
-		{
-			name: "uninitialized",
-			setup: func() *Redis {
-				return &Redis{db: nil}
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		s.Run(tt.name, func() {
-			s.T().Parallel()
-
-			redis := tt.setup()
-			err := redis.Close()
-
-			if tt.wantErr {
-				assert.Error(s.T(), err)
-			} else {
-				assert.NoError(s.T(), err)
-			}
-		})
-	}
-}
-
 func (s *RedisTestSuite) TestRedisOperations() {
 	operations := []struct {
-		name    string
-		op      func(*Redis) error
-		wantErr bool
+		name       string
+		op         func(*Redis) error
+		wantErr    bool
+		skipUninit bool
 	}{
 		{
-			name: "Get",
+			name: "Get non-existing key",
 			op: func(r *Redis) error {
-				_, err := r.Get(s.ctx, "test-key")
-				return err
+				if r.db == nil {
+					return errNotInitialized
+				}
+
+				_, err := r.Get(s.ctx, "non-existing-key")
+
+				if err != redisClient.Nil {
+					return fmt.Errorf("expected redis.Nil error, got %v", err)
+				}
+
+				r.logger = nil
+				_, err = r.Get(s.ctx, "non-existing-key")
+
+				if err != redisClient.Nil {
+					return fmt.Errorf("expected redis.Nil error with nil logger, got %v", err)
+				}
+
+				return nil
 			},
 			wantErr: false,
 		},
 		{
-			name: "Set",
+			name: "Basic Redis operations",
 			op: func(r *Redis) error {
+				if r.db == nil {
+					return errNotInitialized
+				}
+
 				_, err := r.Set(s.ctx, "test-key", "test-value", time.Hour)
-				return err
+
+				if err != nil {
+					return fmt.Errorf("Set failed: %v", err)
+				}
+
+				val, err := r.Get(s.ctx, "test-key")
+
+				if err != nil {
+					return fmt.Errorf("Get failed: %v", err)
+				}
+
+				if val.Val() != "test-value" {
+					return fmt.Errorf("expected 'test-value', got '%s'", val.Val())
+				}
+
+				_, err = r.SetRange(s.ctx, "test-key", 5, "-modified")
+
+				if err != nil {
+					return fmt.Errorf("SetRange failed: %v", err)
+				}
+
+				rangeVal, err := r.GetRange(s.ctx, "test-key", 5, 13)
+
+				if err != nil {
+					return fmt.Errorf("GetRange failed: %v", err)
+				}
+
+				if rangeVal.Val() != "-modified" {
+					return fmt.Errorf("expected '-modified', got '%s'", rangeVal.Val())
+				}
+
+				_, err = r.FlushDB(s.ctx)
+
+				if err != nil {
+					return fmt.Errorf("FlushDB failed: %v", err)
+				}
+
+				r.logger = nil
+
+				_, err = r.Set(s.ctx, "test-key", "test-value", time.Hour)
+
+				if err != nil {
+					return fmt.Errorf("Set failed with nil logger: %v", err)
+				}
+
+				val, err = r.Get(s.ctx, "test-key")
+
+				if err != nil {
+					return fmt.Errorf("Get failed with nil logger: %v", err)
+				}
+
+				if val.Val() != "test-value" {
+					return fmt.Errorf("expected 'test-value', got '%s'", val.Val())
+				}
+
+				_, err = r.SetRange(s.ctx, "test-key", 5, "-modified")
+
+				if err != nil {
+					return fmt.Errorf("SetRange failed with nil logger: %v", err)
+				}
+
+				rangeVal, err = r.GetRange(s.ctx, "test-key", 5, 13)
+
+				if err != nil {
+					return fmt.Errorf("GetRange failed with nil logger: %v", err)
+				}
+
+				if rangeVal.Val() != "-modified" {
+					return fmt.Errorf("expected '-modified', got '%s'", rangeVal.Val())
+				}
+
+				_, err = r.FlushDB(s.ctx)
+
+				if err != nil {
+					return fmt.Errorf("FlushDB failed with nil logger: %v", err)
+				}
+
+				_, err = r.Get(s.ctx, "test-key")
+
+				if err != redisClient.Nil {
+					return fmt.Errorf("expected key to be removed after FlushDB, got %v", err)
+				}
+
+				return nil
 			},
 			wantErr: false,
 		},
 		{
-			name: "GetRange",
+			name: "Error handling with invalid connection",
 			op: func(r *Redis) error {
-				_, err := r.GetRange(s.ctx, "test-key", 0, 10)
-				return err
+				errorClient := &Redis{
+					db:     redisClient.NewClient(&redisClient.Options{Addr: "localhost:1"}),
+					logger: s.logger,
+				}
+
+				defer errorClient.Close()
+
+				_, err := errorClient.Set(s.ctx, "test-key", "test-value", time.Hour)
+
+				if err == nil {
+					return fmt.Errorf("expected error for Set with invalid client")
+				}
+
+				_, err = errorClient.Get(s.ctx, "test-key")
+
+				if err == nil {
+					return fmt.Errorf("expected error for Get with invalid client")
+				}
+
+				_, err = errorClient.GetRange(s.ctx, "test-key", 0, 5)
+
+				if err == nil {
+					return fmt.Errorf("expected error for GetRange with invalid client")
+				}
+
+				_, err = errorClient.SetRange(s.ctx, "test-key", 0, "modified")
+
+				if err == nil {
+					return fmt.Errorf("expected error for SetRange with invalid client")
+				}
+
+				_, err = errorClient.FlushDB(s.ctx)
+
+				if err == nil {
+					return fmt.Errorf("expected error for FlushDB with invalid client")
+				}
+
+				errorClient.logger = nil
+
+				_, err = errorClient.Set(s.ctx, "test-key", "test-value", time.Hour)
+
+				if err == nil {
+					return fmt.Errorf("expected error for Set with invalid client and nil logger")
+				}
+
+				_, err = errorClient.Get(s.ctx, "test-key")
+
+				if err == nil {
+					return fmt.Errorf("expected error for Get with invalid client and nil logger")
+				}
+
+				_, err = errorClient.GetRange(s.ctx, "test-key", 0, 5)
+
+				if err == nil {
+					return fmt.Errorf("expected error for GetRange with invalid client and nil logger")
+				}
+
+				_, err = errorClient.SetRange(s.ctx, "test-key", 0, "modified")
+
+				if err == nil {
+					return fmt.Errorf("expected error for SetRange with invalid client and nil logger")
+				}
+
+				_, err = errorClient.FlushDB(s.ctx)
+
+				if err == nil {
+					return fmt.Errorf("expected error for FlushDB with invalid client and nil logger")
+				}
+
+				return nil
 			},
-			wantErr: false,
+			wantErr:    false,
+			skipUninit: true,
 		},
 		{
-			name: "SetRange",
+			name: "Closed client operations",
 			op: func(r *Redis) error {
-				_, err := r.SetRange(s.ctx, "test-key", 0, "test-value")
-				return err
+				closedClient := &Redis{
+					db:     redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
+					logger: s.logger,
+				}
+
+				closedClient.Close()
+
+				_, err := closedClient.Set(s.ctx, "test-key", "test-value", time.Hour)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for Set, got %v", err)
+				}
+
+				_, err = closedClient.Get(s.ctx, "test-key")
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for Get, got %v", err)
+				}
+
+				_, err = closedClient.GetRange(s.ctx, "test-key", 0, 5)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for GetRange, got %v", err)
+				}
+
+				_, err = closedClient.SetRange(s.ctx, "test-key", 0, "modified")
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for SetRange, got %v", err)
+				}
+
+				_, err = closedClient.FlushDB(s.ctx)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for FlushDB, got %v", err)
+				}
+
+				closedClient.logger = nil
+
+				_, err = closedClient.Set(s.ctx, "test-key", "test-value", time.Hour)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for Set with nil logger, got %v", err)
+				}
+
+				_, err = closedClient.Get(s.ctx, "test-key")
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for Get with nil logger, got %v", err)
+				}
+
+				_, err = closedClient.GetRange(s.ctx, "test-key", 0, 5)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for GetRange with nil logger, got %v", err)
+				}
+
+				_, err = closedClient.SetRange(s.ctx, "test-key", 0, "modified")
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for SetRange with nil logger, got %v", err)
+				}
+
+				_, err = closedClient.FlushDB(s.ctx)
+
+				if err != errClientClosed {
+					return fmt.Errorf("expected errClientClosed for FlushDB with nil logger, got %v", err)
+				}
+
+				return nil
 			},
-			wantErr: false,
+			wantErr:    false,
+			skipUninit: true,
 		},
 		{
-			name: "FlushDB",
+			name: "Operations with uninitialized client",
 			op: func(r *Redis) error {
-				_, err := r.FlushDB(s.ctx)
-				return err
+				uninitClient := &Redis{
+					db:     nil,
+					logger: s.logger,
+				}
+
+				if _, err := uninitClient.Get(s.ctx, "key"); err != errNotInitialized {
+					return fmt.Errorf("expected errNotInitialized for Get, got %v", err)
+				}
+
+				if _, err := uninitClient.Set(s.ctx, "key", "value", time.Hour); err != errNotInitialized {
+					return fmt.Errorf("expected errNotInitialized for Set, got %v", err)
+				}
+
+				if _, err := uninitClient.GetRange(s.ctx, "key", 0, 5); err != errNotInitialized {
+					return fmt.Errorf("expected errNotInitialized for GetRange, got %v", err)
+				}
+
+				if _, err := uninitClient.SetRange(s.ctx, "key", 0, "value"); err != errNotInitialized {
+					return fmt.Errorf("expected errNotInitialized for SetRange, got %v", err)
+				}
+
+				if _, err := uninitClient.FlushDB(s.ctx); err != errNotInitialized {
+					return fmt.Errorf("expected errNotInitialized for FlushDB, got %v", err)
+				}
+
+				return nil
 			},
-			wantErr: false,
+			wantErr:    false,
+			skipUninit: true,
 		},
 	}
 
@@ -180,10 +401,7 @@ func (s *RedisTestSuite) TestRedisOperations() {
 		op := op
 
 		s.Run(op.name, func() {
-			s.T().Parallel()
-
-			redis := s.newRedisClient()
-			defer redis.Close()
+			redis := s.client
 			err := op.op(redis)
 
 			if op.wantErr {
@@ -193,68 +411,109 @@ func (s *RedisTestSuite) TestRedisOperations() {
 			}
 		})
 
-		s.Run(op.name+" uninitialized", func() {
-			s.T().Parallel()
+		if !op.skipUninit {
+			s.Run(op.name+"_uninitialized", func() {
+				uninitRedis := &Redis{db: nil, logger: s.logger}
+				err := op.op(uninitRedis)
+				assert.Equal(s.T(), errNotInitialized, err)
 
-			uninitRedis := &Redis{db: nil, logger: s.logger}
-			err := op.op(uninitRedis)
-			assert.Error(s.T(), err)
-			assert.Equal(s.T(), errNotInitialized, err)
+				uninitRedis.logger = nil
+				err = op.op(uninitRedis)
+				assert.Equal(s.T(), errNotInitialized, err)
+			})
+		}
+	}
+}
+
+func (s *RedisTestSuite) TestIsClientClosed() {
+	tests := []struct {
+		name     string
+		setup    func() *Redis
+		expected bool
+	}{
+		{
+			name: "nil client",
+			setup: func() *Redis {
+				return &Redis{db: nil}
+			},
+			expected: false,
+		},
+		{
+			name: "closed client",
+			setup: func() *Redis {
+				client := &Redis{
+					db: redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
+				}
+				client.Close()
+				return client
+			},
+			expected: true,
+		},
+		{
+			name: "active client",
+			setup: func() *Redis {
+				return &Redis{
+					db: redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
+				}
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			client := tt.setup()
+			result := client.isClientClosed()
+			assert.Equal(s.T(), tt.expected, result)
+
+			if client.db != nil {
+				client.Close()
+			}
 		})
 	}
 }
 
-func (s *RedisTestSuite) TestErrorLogging() {
-	operations := []struct {
-		name string
-		op   func(*Redis) error
+func (s *RedisTestSuite) TestClose() {
+	tests := []struct {
+		name    string
+		client  *Redis
+		wantErr error
 	}{
 		{
-			name: "Get error",
-			op: func(r *Redis) error {
-				_, err := r.Get(s.ctx, "error-key")
-				return err
-			},
+			name:    "nil client",
+			client:  &Redis{db: nil},
+			wantErr: errNotInitialized,
 		},
 		{
-			name: "Set error",
-			op: func(r *Redis) error {
-				_, err := r.Set(s.ctx, "error-key", "error-value", time.Hour)
-				return err
+			name: "valid client",
+			client: &Redis{
+				db: redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
 			},
+			wantErr: nil,
 		},
 		{
-			name: "GetRange error",
-			op: func(r *Redis) error {
-				_, err := r.GetRange(s.ctx, "error-key", -1, -1)
-				return err
-			},
-		},
-		{
-			name: "SetRange error",
-			op: func(r *Redis) error {
-				_, err := r.SetRange(s.ctx, "error-key", -1, "error-value")
-				return err
-			},
-		},
-		{
-			name: "FlushDB error",
-			op: func(r *Redis) error {
-				_, err := r.FlushDB(s.ctx)
-				return err
-			},
+			name: "already closed client",
+			client: func() *Redis {
+				client := &Redis{
+					db: redisClient.NewClient(&redisClient.Options{Addr: "localhost:9736"}),
+				}
+				client.Close()
+				return client
+			}(),
+			wantErr: errClientClosed,
 		},
 	}
 
-	for _, op := range operations {
-		op := op
+	for _, tt := range tests {
+		tt := tt
 
-		s.Run(op.name, func() {
-			s.T().Parallel()
-			redis := s.newRedisClient()
-			redis.db.Close()
-			err := op.op(redis)
-			assert.NoError(s.T(), err)
+		s.Run(tt.name, func() {
+			err := tt.client.Close()
+			if tt.wantErr != nil {
+				assert.Equal(s.T(), tt.wantErr, err)
+			} else {
+				s.NoError(err)
+			}
 		})
 	}
 }
