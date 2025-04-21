@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var osExit = os.Exit
+
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Run the website on a local server",
@@ -28,16 +30,21 @@ func ServerCmd(cmd *cobra.Command, args []string) {
 	port, err := cmd.Flags().GetInt("port")
 
 	if err != nil {
-		log.Error("Failed to get port", logger.Fields{"error": err.Error()})
-		return
+		log.Error("Failed to get port flag", logger.Fields{"error": err.Error()})
+		osExit(1)
 	}
 
 	log.Debug("Creating new server instance", logger.Fields{"port": port})
-	srv := server.New(port)
-	err = runServer(srv, port)
+	srv, err := server.New(port)
 
 	if err != nil {
-		log.Error("Failed to start server", logger.Fields{"error": err.Error()})
+		log.Error("Failed to initialize server", logger.Fields{"error": err.Error()})
+		osExit(1)
+	}
+
+	if err := runServer(srv, port); err != nil {
+		log.Error("Server runtime error", logger.Fields{"error": err.Error()})
+		osExit(1)
 	}
 }
 

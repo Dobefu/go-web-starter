@@ -250,7 +250,7 @@ func TestDefaultNewErrors(t *testing.T) {
 	assert.Nil(t, srv)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, expectedDBError.Error())
-	assert.ErrorContains(t, err, "Failed to initialize database")
+	assert.ErrorContains(t, err, "failed to initialize database")
 }
 
 func TestDefaultNewRedisError(t *testing.T) {
@@ -264,9 +264,11 @@ func TestDefaultNewRedisError(t *testing.T) {
 	defer func() { _ = os.RemoveAll("static") }()
 
 	originalDBNew := database.New
+
 	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
 		return &database.Database{}, nil
 	}
+
 	defer func() { database.New = originalDBNew }()
 
 	originalRedisNew := redis.New
@@ -285,7 +287,7 @@ func TestDefaultNewRedisError(t *testing.T) {
 	assert.Nil(t, srv)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, expectedRedisError.Error())
-	assert.ErrorContains(t, err, "Failed to initialize Redis")
+	assert.ErrorContains(t, err, "failed to initialize Redis")
 }
 
 func TestDefaultNewRedisDisabled(t *testing.T) {
