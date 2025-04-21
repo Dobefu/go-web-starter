@@ -166,12 +166,12 @@ func TestNew(t *testing.T) {
 
 	mockServer := &Server{port: 8080}
 
-	DefaultNew = func(port int) ServerInterface {
-		return mockServer
+	DefaultNew = func(port int) (ServerInterface, error) {
+		return mockServer, nil
 	}
 
-	server := New(8080)
-
+	server, err := New(8080)
+	assert.NoError(t, err)
 	assert.Equal(t, mockServer, server)
 }
 
@@ -216,9 +216,10 @@ func TestDefaultNew(t *testing.T) {
 	}()
 
 	port := 8080
-	srv := defaultNew(port)
-
+	srv, err := defaultNew(port)
+	assert.NoError(t, err)
 	assert.NotNil(t, srv)
+
 	serverImpl, ok := srv.(*Server)
 	assert.True(t, ok)
 	assert.Equal(t, port, serverImpl.port)
@@ -240,17 +241,16 @@ func TestDefaultNewErrors(t *testing.T) {
 	originalNew := database.New
 	defer func() { database.New = originalNew }()
 
+	expectedDBError := fmt.Errorf("database error")
 	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return nil, fmt.Errorf("database error")
+		return nil, expectedDBError
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic from database error")
-		}
-	}()
-
-	_ = defaultNew(8080)
+	srv, err := defaultNew(8080)
+	assert.Nil(t, srv)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, expectedDBError.Error())
+	assert.ErrorContains(t, err, "Failed to initialize database")
 }
 
 func TestDefaultNewRedisError(t *testing.T) {
@@ -263,27 +263,29 @@ func TestDefaultNewRedisError(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll("static") }()
 
-	originalNew := database.New
+	originalDBNew := database.New
 	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
 		return &database.Database{}, nil
 	}
-	defer func() { database.New = originalNew }()
+	defer func() { database.New = originalDBNew }()
 
 	originalRedisNew := redis.New
+	expectedRedisError := fmt.Errorf("redis connection failed")
 
 	redis.New = func(cfg config.Redis, log *logger.Logger) (*redis.Redis, error) {
-		return nil, fmt.Errorf("redis error")
+		return nil, expectedRedisError
 	}
 
 	defer func() { redis.New = originalRedisNew }()
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic from Redis error")
-		}
-	}()
+	viper.Set("redis.enable", true)
+	defer viper.Set("redis.enable", config.DefaultConfig.Redis.Enable)
 
-	_ = defaultNew(8080)
+	srv, err := defaultNew(8080)
+	assert.Nil(t, srv)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, expectedRedisError.Error())
+	assert.ErrorContains(t, err, "Failed to initialize Redis")
 }
 
 func TestDefaultNewRedisDisabled(t *testing.T) {
@@ -296,21 +298,22 @@ func TestDefaultNewRedisDisabled(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll("static") }()
 
-	originalNew := database.New
+	originalDBNew := database.New
 
 	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
 		return &database.Database{}, nil
 	}
 
-	defer func() { database.New = originalNew }()
+	defer func() { database.New = originalDBNew }()
 
 	viper.Set("redis.enable", false)
-	defer viper.Set("redis.enable", true)
+	defer viper.Set("redis.enable", config.DefaultConfig.Redis.Enable)
 
 	port := 8080
-	srv := defaultNew(port)
-
+	srv, err := defaultNew(port)
+	assert.NoError(t, err)
 	assert.NotNil(t, srv)
+
 	serverImpl, ok := srv.(*Server)
 	assert.True(t, ok)
 	assert.Equal(t, port, serverImpl.port)
