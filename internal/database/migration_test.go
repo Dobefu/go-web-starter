@@ -48,7 +48,7 @@ func setupTest(t *testing.T) (sqlmock.Sqlmock, *Database, func()) {
 
 	originalNew := New
 
-	New = func(cfg config.Database, log *logger.Logger) (*Database, error) {
+	New = func(cfg config.Database, log *logger.Logger) (DatabaseInterface, error) {
 		return &Database{db: db}, nil
 	}
 

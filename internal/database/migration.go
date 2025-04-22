@@ -29,8 +29,9 @@ var contentFS = ContentFS{content: content}
 func MigrateDown(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
+	db, _ := dbConn.(*Database)
 
-	version, dirty := getMigrationState(dbConn)
+	version, dirty := getMigrationState(db)
 
 	if dirty {
 		return fmt.Errorf("the migrations table is in a dirty state")
@@ -64,14 +65,14 @@ func MigrateDown(cfg config.Database) (err error) {
 		}
 
 		log.Info(fmt.Sprintf("Running migration: %s", name), nil)
-		err = runMigration(dbConn, name, migrationIndex)
+		err = runMigration(db, name, migrationIndex)
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err = setMigrationState(dbConn, migrationIndex, false)
+	err = setMigrationState(db, migrationIndex, false)
 
 	if err != nil {
 		return err
@@ -83,14 +84,15 @@ func MigrateDown(cfg config.Database) (err error) {
 func MigrateUp(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 	dbConn, _ := New(cfg, nil)
+	db, _ := dbConn.(*Database)
 
-	err = createMigrationsTable(dbConn)
+	err = createMigrationsTable(db)
 
 	if err != nil {
 		return err
 	}
 
-	version, dirty := getMigrationState(dbConn)
+	version, dirty := getMigrationState(db)
 
 	if dirty {
 		return fmt.Errorf("the migrations table is in a dirty state")
@@ -118,14 +120,14 @@ func MigrateUp(cfg config.Database) (err error) {
 		}
 
 		log.Info(fmt.Sprintf("Running migration: %s", name), nil)
-		err = runMigration(dbConn, name, migrationIndex)
+		err = runMigration(db, name, migrationIndex)
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err = setMigrationState(dbConn, migrationIndex, false)
+	err = setMigrationState(db, migrationIndex, false)
 
 	if err != nil {
 		return err

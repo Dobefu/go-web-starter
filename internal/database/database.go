@@ -27,13 +27,7 @@ type Database struct {
 
 var errNotInitialized error = fmt.Errorf("database not initialized")
 
-var New = func(cfg config.Database, log *logger.Logger) (*Database, error) {
-	log.Debug("Initializing database connection", logger.Fields{
-		"host":   cfg.Host,
-		"port":   cfg.Port,
-		"dbname": cfg.DBName,
-	})
-
+var New = func(cfg config.Database, log *logger.Logger) (DatabaseInterface, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,
@@ -46,25 +40,26 @@ var New = func(cfg config.Database, log *logger.Logger) (*Database, error) {
 	db, err := sql.Open("postgres", dsn)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
-	db.SetMaxIdleConns(10)
-	db.SetMaxOpenConns(100)
-	db.SetConnMaxLifetime(time.Hour)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetConnMaxLifetime(2 * time.Hour)
 
-	log.Trace("Testing database connection", nil)
-
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	log.Debug("Database connection established", nil)
-
-	return &Database{
+	dbInstance := &Database{
 		db:     db,
 		logger: log,
-	}, nil
+	}
+
+	if err = dbInstance.Ping(); err != nil {
+		_ = dbInstance.Close() // Attempt to close if ping fails
+		return nil, err
+	}
+
+	log.Info("Database connection established", nil)
+	return dbInstance, nil
 }
 
 func (d *Database) Close() error {
