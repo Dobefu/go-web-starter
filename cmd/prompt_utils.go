@@ -9,7 +9,7 @@ import (
 	"golang.org/x/term"
 )
 
-func promptForString(promptText string) (string, error) {
+var promptForString = func(promptText string) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(promptText)
 	input, err := reader.ReadString('\n')
@@ -21,7 +21,7 @@ func promptForString(promptText string) (string, error) {
 	return strings.TrimSpace(input), nil
 }
 
-func promptForPassword(promptText string) (string, error) {
+var promptForPassword = func(promptText string) (string, error) {
 	fmt.Print(promptText)
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 
