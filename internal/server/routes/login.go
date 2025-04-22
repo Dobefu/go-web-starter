@@ -1,13 +1,17 @@
 package routes
 
 import (
+	"errors"
 	"net/http"
 	"os"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,9 +47,7 @@ func LoginPost(c *gin.Context) {
 	err := v.ValidateForm(c.Request)
 
 	if err != nil {
-		log.Error("Failed to parse form data", map[string]any{
-			"error": err.Error(),
-		})
+		log.Error("Failed to parse form data", map[string]any{"error": err.Error()})
 	}
 
 	email := v.GetFormValue(c.Request, "email")
@@ -55,21 +57,77 @@ func LoginPost(c *gin.Context) {
 	v.Required("password", password)
 
 	if v.HasErrors() {
-		v.SetFormData(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-
-		v.SetErrors()
-		v.SetFlash("Please correct the errors below")
-		c.Redirect(http.StatusSeeOther, "/login")
+		redirectWithError(c, v, email, "Please correct the errors below")
 		return
 	}
 
-	log.Info("Login attempt", map[string]any{
-		"email": email,
+	db, ok := c.MustGet("db").(database.DatabaseInterface)
+
+	if !ok {
+		log.Error("Failed to get database connection from context", nil)
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	foundUser, err := user.FindByEmail(db, email)
+
+	if err != nil {
+		if errors.Is(err, user.ErrInvalidCredentials) {
+			log.Warn("Login failed: invalid credentials (email not found)", map[string]any{"email": email})
+			redirectWithError(c, v, email, user.ErrInvalidCredentials.Error())
+		} else {
+			log.Error("Database error during login", map[string]any{"email": email, "error": err.Error()})
+			RenderRouteHTML(c, GenericErrorData(c))
+		}
+
+		return
+	}
+
+	err = foundUser.CheckPassword(password)
+
+	if err != nil {
+		if errors.Is(err, user.ErrInvalidCredentials) {
+			log.Warn("Login failed: invalid credentials (password mismatch)", map[string]any{"email": email})
+			redirectWithError(c, v, email, user.ErrInvalidCredentials.Error())
+		} else {
+			log.Error("Password check error during login", map[string]any{"email": email, "error": err.Error()})
+			RenderRouteHTML(c, GenericErrorData(c))
+		}
+
+		return
+	}
+
+	session := sessions.Default(c)
+	session.Set("userID", foundUser.GetID())
+
+	if err := session.Save(); err != nil {
+		log.Error("Failed to save session after login", map[string]any{"email": email, "error": err.Error()})
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	log.Info("Login successful", map[string]any{
+		"email":  email,
+		"userID": foundUser.GetID(),
 	})
 
 	v.SetFlash("Successfully logged in!")
 	c.Redirect(http.StatusSeeOther, "/")
+}
+
+func redirectWithError(c *gin.Context, v *validator.Validator, email string, flashMsg string) {
+	v.SetFormData(map[string]string{
+		"email": email,
+	})
+
+	if !v.HasErrors() {
+		v.AddFieldError("email", user.ErrInvalidCredentials.Error())
+		v.AddFieldError("password", " ")
+	}
+
+	v.SetErrors()
+	v.SetFlash(flashMsg)
+	c.Redirect(http.StatusSeeOther, "/login")
 }
