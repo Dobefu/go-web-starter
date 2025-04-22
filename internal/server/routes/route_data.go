@@ -24,7 +24,7 @@ type RouteData struct {
 
 func GenericErrorData(c *gin.Context) RouteData {
 	return RouteData{
-		Template:    "pages/500",
+		Template:    "pages/server-error",
 		HttpStatus:  http.StatusInternalServerError,
 		Title:       "Server Error",
 		Description: "Sorry, something went wrong on our end.",

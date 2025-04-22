@@ -1,0 +1,10 @@
+{{- define "pages/server-error" -}}
+  {{- template "layouts/default/head" . -}}
+
+  {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
+
+
+  <p>{{ .Description }}</p>
+
+  {{- template "layouts/default/foot" . -}}
+{{- end -}}
