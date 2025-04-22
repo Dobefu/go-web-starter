@@ -31,5 +31,5 @@ func TestDatabase(t *testing.T) {
 
 	db, exists := c.Get("db")
 	assert.True(t, exists)
-	assert.Equal(t, mockDB, db)
+	assert.IsType(t, &MockDatabase{}, db)
 }

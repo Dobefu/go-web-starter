@@ -187,8 +187,11 @@ func TestDefaultNew(t *testing.T) {
 
 	originalNew := database.New
 
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return &database.Database{}, nil
+	database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
+		mockDB := new(MockDatabase)
+		mockDB.On("Close").Return(nil)
+
+		return mockDB, nil
 	}
 
 	defer func() { database.New = originalNew }()
@@ -242,8 +245,12 @@ func TestDefaultNewErrors(t *testing.T) {
 	defer func() { database.New = originalNew }()
 
 	expectedDBError := fmt.Errorf("database error")
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return nil, expectedDBError
+	database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
+		mockDB := new(MockDatabase)
+		mockDB.On("Close").Return(nil)
+		mockDB.On("Ping").Return(expectedDBError)
+
+		return mockDB, expectedDBError
 	}
 
 	srv, err := defaultNew(8080)
@@ -265,8 +272,12 @@ func TestDefaultNewRedisError(t *testing.T) {
 
 	originalDBNew := database.New
 
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return &database.Database{}, nil
+	database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
+		mockDB := new(MockDatabase)
+		mockDB.On("Close").Return(nil)
+		mockDB.On("Ping").Return(nil)
+
+		return mockDB, nil
 	}
 
 	defer func() { database.New = originalDBNew }()
@@ -302,8 +313,12 @@ func TestDefaultNewRedisDisabled(t *testing.T) {
 
 	originalDBNew := database.New
 
-	database.New = func(cfg config.Database, log *logger.Logger) (*database.Database, error) {
-		return &database.Database{}, nil
+	database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
+		mockDB := new(MockDatabase)
+		mockDB.On("Close").Return(nil)
+		mockDB.On("Ping").Return(nil)
+
+		return mockDB, nil
 	}
 
 	defer func() { database.New = originalDBNew }()

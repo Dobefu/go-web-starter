@@ -133,15 +133,23 @@ func TestUserGetUpdatedAt(t *testing.T) {
 func TestUserSaveQueryRowError(t *testing.T) {
 	t.Parallel()
 
-	expectedError := sql.ErrConnDone
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer func() { _ = mockDB.Close() }()
 
-	db := &mockDatabaseWithQueryRowError{
-		queryRowError: expectedError,
-	}
+	db := &mockDatabase{db: mockDB, mock: mock}
 
 	user := setupUserTests()
-	err := user.Save(db)
-	assert.EqualError(t, err, expectedError.Error())
+	expectedError := sql.ErrConnDone
+
+	mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
+		WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnError(expectedError)
+
+	err = user.Save(db)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, expectedError.Error())
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestUserSaveErrScan(t *testing.T) {
@@ -156,13 +164,16 @@ func TestUserSaveErrScan(t *testing.T) {
 	}
 
 	user := setupUserTests()
+	scanErr := sql.ErrNoRows
 
 	mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-		WithArgs(user.id, user.username, user.email, user.status, user.createdAt, user.updatedAt).
-		WillReturnError(sql.ErrNoRows)
+		WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(nil, nil, nil).RowError(0, scanErr))
 
 	err = user.Save(db)
-	assert.EqualError(t, err, sql.ErrNoRows.Error())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, scanErr)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestUserSaveSuccess(t *testing.T) {
@@ -177,11 +188,17 @@ func TestUserSaveSuccess(t *testing.T) {
 	}
 
 	user := setupUserTests()
+	newID := 99
+	now := time.Now()
 
 	mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-		WithArgs(user.id, user.username, user.email, user.status, user.createdAt, user.updatedAt).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+		WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(newID, now, now))
 
 	err = user.Save(db)
 	assert.NoError(t, err)
+	assert.Equal(t, newID, user.GetID())
+	assert.WithinDuration(t, now, user.GetCreatedAt(), time.Second)
+	assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }

@@ -2,7 +2,7 @@ package logger
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"sort"
 	"time"
 
@@ -32,11 +32,11 @@ type Fields map[string]any
 
 type Logger struct {
 	level     Level
-	output    *os.File
+	output    io.Writer
 	requestID string
 }
 
-func New(level Level, output *os.File) *Logger {
+func New(level Level, output io.Writer) *Logger {
 	return &Logger{
 		level:  level,
 		output: output,
@@ -44,11 +44,9 @@ func New(level Level, output *os.File) *Logger {
 }
 
 func (l *Logger) WithRequestID(requestID string) *Logger {
-	return &Logger{
-		level:     l.level,
-		output:    l.output,
-		requestID: requestID,
-	}
+	newLogger := *l
+	newLogger.requestID = requestID
+	return &newLogger
 }
 
 func (l *Logger) log(level Level, msg string, fields Fields) {

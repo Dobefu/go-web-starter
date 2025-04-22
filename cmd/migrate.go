@@ -2,34 +2,41 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-type DatabaseMigrator interface {
-	MigrateUp(cfg config.Database) error
-	MigrateDown(cfg config.Database) error
-	MigrateVersion(cfg config.Database) (int, error)
-}
+const (
+	configFileNameDefault = "config.toml"
+	configPathDefault     = "."
+	logLevelConfigKey     = "log.level"
+	logLevelDefault       = logger.InfoLevel
 
-type defaultDatabaseMigrator struct{}
+	errReadingConfig       = "Error reading config file, %s\n"
+	errUnmarshallingConfig = "Error unmarshalling config: %v\n"
+	errDbConnection        = "Failed to connect to database"
+	errDbClose             = "Error closing database connection"
+	errInvalidVersionFmt   = "invalid version format: %s. Please provide an integer"
 
-func (d *defaultDatabaseMigrator) MigrateUp(cfg config.Database) error {
-	return database.MigrateUp(cfg)
-}
+	logMsgRunningUp      = "Running migrations up..."
+	logMsgUpSuccess      = "Migrations applied successfully."
+	logMsgUpFailed       = "Migration failed"
+	logMsgRunningDown    = "Running migration down..."
+	logMsgDownSuccess    = "Last migration rolled back successfully."
+	logMsgDownFailed     = "Migration rollback failed"
+	logMsgRunningVersion = "Migrating to specific version"
+	logMsgVersionSuccess = "Successfully migrated to version"
+	logMsgVersionFailed  = "Migration to version failed"
 
-func (d *defaultDatabaseMigrator) MigrateDown(cfg config.Database) error {
-	return database.MigrateDown(cfg)
-}
-
-func (d *defaultDatabaseMigrator) MigrateVersion(cfg config.Database) (int, error) {
-	return database.MigrateVersion(cfg)
-}
-
-var migrator DatabaseMigrator = &defaultDatabaseMigrator{}
+	logFieldError   = "error"
+	logFieldVersion = "version"
+)
 
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
@@ -38,20 +45,166 @@ var migrateCmd = &cobra.Command{
 
 var migrateUpCmd = &cobra.Command{
 	Use:   "up",
-	Short: "Run all pending migrations",
-	Run:   migrateUp,
+	Short: "Apply all available migrations",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		viper.SetConfigFile(configFileNameDefault)
+		viper.AddConfigPath(configPathDefault)
+		viper.AutomaticEnv()
+		viper.SetDefault(logLevelConfigKey, int(logLevelDefault))
+
+		cfg := config.DefaultConfig
+
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, errReadingConfig, err)
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return err
+			}
+		}
+
+		if err := viper.Unmarshal(&cfg); err != nil {
+			fmt.Fprintf(os.Stderr, errUnmarshallingConfig, err)
+			return err
+		}
+
+		log := logger.New(logger.Level(cfg.Log.Level), cmd.ErrOrStderr())
+
+		dbCfg := getDatabaseConfig(&cfg)
+		db, err := database.New(dbCfg, log)
+
+		if err != nil {
+			log.Error(errDbConnection, logger.Fields{logFieldError: err})
+			return err
+		}
+
+		defer func() {
+			if closeErr := db.Close(); closeErr != nil {
+				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
+			}
+		}()
+
+		log.Info(logMsgRunningUp, nil)
+		err = database.MigrateUp(dbCfg)
+
+		if err != nil {
+			log.Error(logMsgUpFailed, logger.Fields{logFieldError: err})
+			return err
+		}
+
+		log.Info(logMsgUpSuccess, nil)
+		return nil
+	},
 }
 
 var migrateDownCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Rollback the last migration",
-	Run:   migrateDown,
+	Short: "Roll back the last migration",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		viper.SetConfigFile(configFileNameDefault)
+		viper.AddConfigPath(configPathDefault)
+		viper.AutomaticEnv()
+		viper.SetDefault(logLevelConfigKey, int(logLevelDefault))
+
+		cfg := config.DefaultConfig
+
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, errReadingConfig, err)
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return err
+			}
+		}
+
+		if err := viper.Unmarshal(&cfg); err != nil {
+			fmt.Fprintf(os.Stderr, errUnmarshallingConfig, err)
+			return err
+		}
+
+		log := logger.New(logger.Level(cfg.Log.Level), cmd.ErrOrStderr())
+
+		dbCfg := getDatabaseConfig(&cfg)
+		db, err := database.New(dbCfg, log)
+
+		if err != nil {
+			log.Error(errDbConnection, logger.Fields{logFieldError: err})
+			return err
+		}
+
+		defer func() {
+			if closeErr := db.Close(); closeErr != nil {
+				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
+			}
+		}()
+
+		log.Info(logMsgRunningDown, nil)
+		err = database.MigrateDown(dbCfg)
+
+		if err != nil {
+			log.Error(logMsgDownFailed, logger.Fields{logFieldError: err})
+			return err
+		}
+
+		log.Info(logMsgDownSuccess, nil)
+		return nil
+	},
 }
 
 var migrateVersionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show current migration version",
-	Run:   migrateVersion,
+	Use:   "version [version]",
+	Short: "Migrate to a specific version",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		versionStr := args[0]
+		version, err := strconv.Atoi(versionStr)
+
+		if err != nil {
+			return fmt.Errorf(errInvalidVersionFmt, versionStr)
+		}
+
+		viper.SetConfigFile(configFileNameDefault)
+		viper.AddConfigPath(configPathDefault)
+		viper.AutomaticEnv()
+		viper.SetDefault(logLevelConfigKey, int(logLevelDefault))
+
+		cfg := config.DefaultConfig
+
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, errReadingConfig, err)
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return err
+			}
+		}
+
+		if err := viper.Unmarshal(&cfg); err != nil {
+			fmt.Fprintf(os.Stderr, errUnmarshallingConfig, err)
+			return err
+		}
+
+		log := logger.New(logger.Level(cfg.Log.Level), cmd.ErrOrStderr())
+
+		dbCfg := getDatabaseConfig(&cfg)
+		db, err := database.New(dbCfg, log)
+
+		if err != nil {
+			log.Error(errDbConnection, logger.Fields{logFieldError: err})
+			return err
+		}
+
+		defer func() {
+			if closeErr := db.Close(); closeErr != nil {
+				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
+			}
+		}()
+
+		log.Info(logMsgRunningVersion, logger.Fields{logFieldVersion: version})
+		_, err = database.MigrateVersion(dbCfg)
+
+		if err != nil {
+			log.Error(logMsgVersionFailed, logger.Fields{logFieldVersion: version, logFieldError: err})
+			return err
+		}
+
+		log.Info(logMsgVersionSuccess, logger.Fields{logFieldVersion: version})
+		return nil
+	},
 }
 
 func init() {
@@ -60,39 +213,6 @@ func init() {
 	migrateCmd.AddCommand(migrateDownCmd)
 	migrateCmd.AddCommand(migrateVersionCmd)
 }
-
-func migrateUp(cmd *cobra.Command, args []string) {
-	err := migrator.MigrateUp(getDatabaseConfig())
-
-	if err != nil {
-		panic(err)
-	}
-}
-
-func migrateDown(cmd *cobra.Command, args []string) {
-	err := migrator.MigrateDown(getDatabaseConfig())
-
-	if err != nil {
-		panic(err)
-	}
-}
-
-func migrateVersion(cmd *cobra.Command, args []string) {
-	version, err := migrator.MigrateVersion(getDatabaseConfig())
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("The migrations are at version %d\n", version)
-}
-
-func getDatabaseConfig() config.Database {
-	return config.Database{
-		Host:     viper.GetString("database.host"),
-		Port:     viper.GetInt("database.port"),
-		User:     viper.GetString("database.user"),
-		Password: viper.GetString("database.password"),
-		DBName:   viper.GetString("database.dbname"),
-	}
+func getDatabaseConfig(cfg *config.Config) config.Database {
+	return cfg.Database
 }

@@ -39,25 +39,31 @@ func (m *MockDatabase) Query(query string, args ...any) (*sql.Rows, error) {
 
 func (m *MockDatabase) QueryRow(query string, args ...any) *sql.Row {
 	mockArgs := m.Called(query, args)
+
 	if mockArgs.Get(0) == nil {
 		return nil
 	}
+
 	return mockArgs.Get(0).(*sql.Row)
 }
 
 func (m *MockDatabase) Exec(query string, args ...any) (sql.Result, error) {
 	mockArgs := m.Called(query, args)
+
 	if mockArgs.Get(0) == nil {
 		return nil, mockArgs.Error(1)
 	}
+
 	return mockArgs.Get(0).(sql.Result), mockArgs.Error(1)
 }
 
 func (m *MockDatabase) Begin() (*sql.Tx, error) {
 	mockArgs := m.Called()
+
 	if mockArgs.Get(0) == nil {
 		return nil, mockArgs.Error(1)
 	}
+
 	return mockArgs.Get(0).(*sql.Tx), mockArgs.Error(1)
 }
 

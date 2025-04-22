@@ -1,113 +1,110 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/Dobefu/go-web-starter/internal/config"
-	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-type MockMigrator struct {
-	mock.Mock
-}
+func setupMigrateTest(t *testing.T) func() {
+	t.Helper()
 
-func (m *MockMigrator) MigrateUp(cfg config.Database) error {
-	args := m.Called(cfg)
-	return args.Error(0)
-}
+	tempDir := t.TempDir()
+	dummyConfigPath := filepath.Join(tempDir, "config.toml")
+	dummyConfigContent := `
+[Database]
+  Host = "localhost"
+  Port = 54329 # Use a non-standard port to avoid real connections
+  User = "testuser"
+  Password = "testpassword"
+  DBName = "testdb"
+[Log]
+  Level = 2 # Use integer for log level (e.g., 2 for Info)
+`
+	err := os.WriteFile(dummyConfigPath, []byte(dummyConfigContent), 0600)
+	assert.NoError(t, err, "Failed to write dummy config file")
 
-func (m *MockMigrator) MigrateDown(cfg config.Database) error {
-	args := m.Called(cfg)
-	return args.Error(0)
-}
+	originalArgs := os.Args
+	originalWd, err := os.Getwd()
+	assert.NoError(t, err)
 
-func (m *MockMigrator) MigrateVersion(cfg config.Database) (int, error) {
-	args := m.Called(cfg)
-	return args.Int(0), args.Error(1)
-}
+	err = os.Chdir(tempDir)
+	assert.NoError(t, err)
 
-func TestDefaultDatabaseMigrator(t *testing.T) {
-	var _ DatabaseMigrator = &defaultDatabaseMigrator{}
-	assert.NotNil(t, &defaultDatabaseMigrator{})
+	viper.Reset()
 
-	cfg := config.Database{
-		Host:     "localhost",
-		Port:     5432,
-		User:     "test",
-		Password: "test",
-		DBName:   "test",
+	return func() {
+		viper.Reset()
+		os.Args = originalArgs
+		err := os.Chdir(originalWd)
+		assert.NoError(t, err)
 	}
-
-	migrator := &defaultDatabaseMigrator{}
-	assert.Panics(t, func() { _ = migrator.MigrateUp(cfg) })
-	assert.Panics(t, func() { _ = migrator.MigrateDown(cfg) })
-	assert.Panics(t, func() { _, _ = migrator.MigrateVersion(cfg) })
 }
 
-func TestMigrateCommands(t *testing.T) {
-	testCommand := func(
-		t *testing.T,
-		command func(*cobra.Command, []string),
-		mockSetup func(*MockMigrator),
-		expectPanic bool,
-		expectedError error,
-	) {
-		mockMigrator := new(MockMigrator)
-		originalMigrator := migrator
-		migrator = mockMigrator
-		defer func() { migrator = originalMigrator }()
+func executeCommand(args ...string) (stdout, stderr string, err error) {
+	stdoutBuf := new(bytes.Buffer)
+	stderrBuf := new(bytes.Buffer)
 
-		mockSetup(mockMigrator)
-		cmd := &cobra.Command{}
-		args := []string{}
+	rootCmd.SetOut(stdoutBuf)
+	rootCmd.SetErr(stderrBuf)
+	rootCmd.SetArgs(args)
+	rootCmd.SilenceUsage = true
 
-		if expectPanic {
-			assert.PanicsWithValue(t, expectedError, func() {
-				command(cmd, args)
-			})
-		} else {
-			assert.NotPanics(t, func() {
-				command(cmd, args)
-			})
-		}
-		mockMigrator.AssertExpectations(t)
-	}
+	err = rootCmd.Execute()
 
-	t.Run("migrate up success", func(t *testing.T) {
-		testCommand(t, migrateUp, func(m *MockMigrator) {
-			m.On("MigrateUp", mock.Anything).Return(nil)
-		}, false, nil)
-	})
+	rootCmd.SilenceUsage = false
 
-	t.Run("migrate up failure", func(t *testing.T) {
-		testCommand(t, migrateUp, func(m *MockMigrator) {
-			m.On("MigrateUp", mock.Anything).Return(assert.AnError)
-		}, true, assert.AnError)
-	})
+	return stdoutBuf.String(), stderrBuf.String(), err
+}
 
-	t.Run("migrate down success", func(t *testing.T) {
-		testCommand(t, migrateDown, func(m *MockMigrator) {
-			m.On("MigrateDown", mock.Anything).Return(nil)
-		}, false, nil)
-	})
+func TestMigrateUpCommand(t *testing.T) {
+	cleanup := setupMigrateTest(t)
+	defer cleanup()
 
-	t.Run("migrate down failure", func(t *testing.T) {
-		testCommand(t, migrateDown, func(m *MockMigrator) {
-			m.On("MigrateDown", mock.Anything).Return(assert.AnError)
-		}, true, assert.AnError)
-	})
+	stdout, stderr, err := executeCommand("migrate", "up")
 
-	t.Run("migrate version success", func(t *testing.T) {
-		testCommand(t, migrateVersion, func(m *MockMigrator) {
-			m.On("MigrateVersion", mock.Anything).Return(5, nil)
-		}, false, nil)
-	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "connect: connection refused")
+	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Empty(t, stdout)
+}
 
-	t.Run("migrate version failure", func(t *testing.T) {
-		testCommand(t, migrateVersion, func(m *MockMigrator) {
-			m.On("MigrateVersion", mock.Anything).Return(0, assert.AnError)
-		}, true, assert.AnError)
-	})
+func TestMigrateDownCommand(t *testing.T) {
+	cleanup := setupMigrateTest(t)
+	defer cleanup()
+
+	stdout, stderr, err := executeCommand("migrate", "down")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "connect: connection refused")
+	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Empty(t, stdout)
+}
+
+func TestMigrateVersionCommand(t *testing.T) {
+	cleanup := setupMigrateTest(t)
+	defer cleanup()
+
+	stdout, stderr, err := executeCommand("migrate", "version", "1")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "connect: connection refused")
+	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Empty(t, stdout)
+
+	stdout, stderr, err = executeCommand("migrate", "version", "abc")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), fmt.Sprintf(errInvalidVersionFmt, "abc"))
+	assert.NotContains(t, stderr, errDbConnection)
+	assert.Empty(t, stdout)
+
+	stdout, _, err = executeCommand("migrate", "version")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
+	assert.Empty(t, stdout)
 }
