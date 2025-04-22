@@ -18,6 +18,7 @@ var (
 	cfgFile string
 	quiet   bool
 	verbose int
+	log     *logger.Logger
 )
 
 var rootCmd = &cobra.Command{
@@ -33,65 +34,84 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "The config file to use (default: ./config.toml)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors")
-	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Enable verbose output (use -vv for debug output, -vvv for trace output)")
+	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Enable verbose output (-v info, -vv debug, -vvv trace)")
+}
+
+func createDefaultConfigFileIfNotExist(filePath string) error {
+	_, err := os.Stat(filePath)
+	if !os.IsNotExist(err) {
+		return err
+	}
+
+	dir := filepath.Dir(filePath)
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	configFileContent, err := toml.Marshal(config.DefaultConfig)
+
+	if err != nil {
+		return fmt.Errorf("failed to marshal default config: %w", err)
+	}
+
+	if err := os.WriteFile(filePath, configFileContent, 0666); err != nil {
+		return fmt.Errorf("failed to write default config file %s: %w", filePath, err)
+	}
+
+	fmt.Printf("Default configuration file created at %s\n", filePath)
+	return nil
 }
 
 func initConfig() {
-	defaultConfigFile := defaultConfigFileName
 	viper.AddConfigPath(".")
+	viper.AutomaticEnv()
 
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		viper.SetConfigType("toml")
-		viper.SetConfigName(defaultConfigFile)
-	}
+		viper.SetConfigName(defaultConfigFileName)
 
-	viper.AutomaticEnv()
-
-	if cfgFile == "" {
-		_, err := os.Stat(defaultConfigFile)
-
-		if os.IsNotExist(err) {
-			dir := filepath.Dir(defaultConfigFile)
-
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				panic(err)
-			}
-
-			configFileContent, err := toml.Marshal(config.DefaultConfig)
-
-			if err != nil {
-				panic(fmt.Errorf("failed to marshal default config: %w", err))
-			}
-
-			if err := os.WriteFile(defaultConfigFile, configFileContent, 0666); err != nil {
-				panic(fmt.Errorf("failed to write default config file: %w", err))
-			}
+		err := createDefaultConfigFileIfNotExist(defaultConfigFileName)
+		if err != nil && !os.IsNotExist(err) {
+			panic(fmt.Errorf("error ensuring default config file exists: %w", err))
 		}
 	}
 
 	err := viper.ReadInConfig()
 
 	if err != nil {
-		if !os.IsNotExist(err) {
+		_, isConfigFileNotFound := err.(viper.ConfigFileNotFoundError)
+
+		if !isConfigFileNotFound {
 			tmpLog := logger.New(logger.WarnLevel, os.Stderr)
-			tmpLog.Error("Error reading config file", map[string]any{"error": err.Error()})
+			tmpLog.Error("Error reading config file", map[string]any{"file": viper.ConfigFileUsed(), "error": err.Error()})
+		} else if cfgFile != "" {
+			tmpLog := logger.New(logger.ErrorLevel, os.Stderr)
+			tmpLog.Error("Specified config file not found", map[string]any{"file": cfgFile, "error": err.Error()})
+			os.Exit(1)
 		}
 	}
 
-	if verbose > 0 {
-		level := logger.DebugLevel
+	logLevel := config.GetLogLevel()
 
-		if verbose >= 3 {
-			level = logger.TraceLevel
-		}
-
-		viper.Set("log.level", level)
+	if verbose == 1 {
+		logLevel = logger.InfoLevel
+	} else if verbose == 2 {
+		logLevel = logger.DebugLevel
+	} else if verbose >= 3 {
+		logLevel = logger.TraceLevel
 	}
 
-	log := logger.New(config.GetLogLevel(), os.Stdout)
-	log.Trace("Starting the application", nil)
+	if quiet {
+		logLevel = logger.ErrorLevel
+	}
+
+	viper.Set("log.level", int(logLevel))
+
+	log = logger.New(logLevel, os.Stdout)
+	log.Trace("Using configuration file", map[string]any{"file": viper.ConfigFileUsed()})
 }
 
 func Execute() {
