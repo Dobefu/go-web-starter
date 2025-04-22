@@ -27,58 +27,67 @@ func init() {
 	userDetailsCmd.Flags().IntP("id", "i", 0, "ID of the user to show details for (takes precedence over email)")
 }
 
-func runUserDetailsCmd(cmd *cobra.Command, args []string) {
-	log := logger.New(config.GetLogLevel(), os.Stdout)
+func runUserDetails(db database.DatabaseInterface, log *logger.Logger, identifier string) (*user.User, error) {
+	log.Info("Attempting to find user...", logger.Fields{"identifier": identifier})
 
+	var foundUser *user.User
+	var findErr error
+
+	parsedID, parseErr := strconv.Atoi(identifier)
+
+	if parseErr == nil && parsedID > 0 {
+		log.Info("Interpreted identifier as ID", logger.Fields{"id": parsedID})
+		foundUser, findErr = user.FindByID(db, parsedID)
+	} else {
+		log.Info("Interpreted identifier as Email", logger.Fields{"email": identifier})
+		foundUser, findErr = user.FindByEmail(db, identifier)
+	}
+
+	if findErr != nil {
+		if errors.Is(findErr, user.ErrInvalidCredentials) || strings.Contains(findErr.Error(), "not found") {
+			log.Warn("User not found", logger.Fields{"identifier": identifier})
+		} else {
+			log.Error("Database error finding user", logger.Fields{
+				"identifier": identifier,
+				"error":      findErr.Error(),
+			})
+		}
+
+		return nil, findErr
+	}
+
+	log.Info("Found user successfully", logger.Fields{"identifier": identifier, "userID": foundUser.GetID()})
+	return foundUser, nil
+}
+
+func runUserDetailsCmd(cmd *cobra.Command, args []string) {
+	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
+
+	identifier := ""
 	flagEmail, _ := cmd.Flags().GetString("email")
 	flagID, _ := cmd.Flags().GetInt("id")
 
-	var foundUser *user.User
-
-	lookupMethod := ""
-	lookupValueStr := ""
-	idToLookup := 0
-	emailToLookup := ""
-
 	if flagID > 0 {
-		lookupMethod = "ID"
-		idToLookup = flagID
-		lookupValueStr = strconv.Itoa(flagID)
-		log.Info("Attempting to find user by ID (from flag)...", logger.Fields{"id": idToLookup})
-
+		identifier = strconv.Itoa(flagID)
+		log.Info("Using ID from flag", logger.Fields{"id": flagID})
 	} else if flagEmail != "" {
-		lookupMethod = "Email"
-		emailToLookup = flagEmail
-		lookupValueStr = flagEmail
-		log.Info("Attempting to find user by email (from flag)...", logger.Fields{"email": emailToLookup})
-
+		identifier = flagEmail
+		log.Info("Using email from flag", logger.Fields{"email": flagEmail})
 	} else {
 		log.Info("No flags provided, prompting for input...", nil)
 		input, err := promptForString("Enter user's email or ID: ")
-
 		if err != nil {
 			log.Error("Failed to get input", logger.Fields{"error": err.Error()})
 			osExit(1)
+			return
 		}
-
 		if input == "" {
 			log.Error("Email or ID must be provided.", nil)
 			osExit(1)
+			return
 		}
-
-		parsedID, parseErr := strconv.Atoi(input)
-
-		if parseErr == nil && parsedID > 0 {
-			lookupMethod = "ID"
-			idToLookup = parsedID
-			lookupValueStr = input
-			log.Info("Attempting to find user by ID (from prompt)...", logger.Fields{"id": idToLookup})
-		} else {
-			lookupMethod = "Email"
-			emailToLookup = input
-			lookupValueStr = input
-			log.Info("Attempting to find user by email (from prompt)...", logger.Fields{"email": emailToLookup})
-		}
+		identifier = input
+		log.Info("Using identifier from prompt", logger.Fields{"identifier": identifier})
 	}
 
 	dbConfig := getDatabaseConfigForCmd()
@@ -87,31 +96,19 @@ func runUserDetailsCmd(cmd *cobra.Command, args []string) {
 	if dbErr != nil {
 		log.Error("Failed to connect to database", logger.Fields{"error": dbErr.Error()})
 		osExit(1)
+
+		return
 	}
 
 	defer func() { _ = db.Close() }()
 
-	var findErr error
+	foundUser, runErr := runUserDetails(db, log, identifier)
 
-	if lookupMethod == "ID" {
-		foundUser, findErr = user.FindByID(db, idToLookup)
-	} else {
-		foundUser, findErr = user.FindByEmail(db, emailToLookup)
-	}
-
-	if findErr != nil {
-		if (lookupMethod == "Email" && errors.Is(findErr, user.ErrInvalidCredentials)) ||
-			(lookupMethod == "ID" && strings.Contains(findErr.Error(), "not found")) {
-			log.Error("User not found", logger.Fields{lookupMethod: lookupValueStr})
-		} else {
-			log.Error("Database error finding user", logger.Fields{
-				"method": lookupMethod,
-				"value":  lookupValueStr,
-				"error":  findErr.Error(),
-			})
-		}
-
+	if runErr != nil {
+		fmt.Fprintf(os.Stderr, "Error finding user: %v\n", runErr)
 		osExit(1)
+
+		return
 	}
 
 	fmt.Println("--- User Details ---")
