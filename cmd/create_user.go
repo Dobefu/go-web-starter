@@ -28,7 +28,7 @@ func init() {
 }
 
 func getUserDetails(cmd *cobra.Command) (username, email, password string, err error) {
-	log := logger.New(config.GetLogLevel(), os.Stdout)
+	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
 
 	username, _ = cmd.Flags().GetString("username")
 	email, _ = cmd.Flags().GetString("email")
@@ -71,44 +71,56 @@ func getUserDetails(cmd *cobra.Command) (username, email, password string, err e
 	return username, email, password, nil
 }
 
-func runCreateUserCmd(cmd *cobra.Command, args []string) {
-	log := logger.New(config.GetLogLevel(), os.Stdout)
-
-	username, email, password, err := getUserDetails(cmd)
-
-	if err != nil {
-		osExit(1)
-	}
-
-	log.Info("Attempting to create user...", logger.Fields{"email": email, "username": username})
-
-	dbConfig := getDatabaseConfigForCmd()
-	db, dbErr := database.New(dbConfig, log)
-
-	if dbErr != nil {
-		log.Error("Failed to connect to database", logger.Fields{"error": dbErr.Error()})
-		osExit(1)
-	}
-
-	defer func() { _ = db.Close() }()
+func runCreateUser(db database.DatabaseInterface, log *logger.Logger, username, email, password string) (*user.User, error) {
+	log.Info("Attempting user creation in core logic...", logger.Fields{"email": email, "username": username})
 
 	createdUser, createErr := user.Create(db, username, email, password)
 
 	if createErr != nil {
-		log.Error("Failed to create user", logger.Fields{
+		log.Error("user.Create failed", logger.Fields{
 			"email":    email,
 			"username": username,
 			"error":    createErr.Error(),
 		})
 
-		osExit(1)
+		return nil, createErr
 	}
 
-	log.Info("Successfully created user", logger.Fields{
+	log.Info("Successfully created user in core logic", logger.Fields{
 		"email":    email,
 		"username": username,
 		"userID":   createdUser.GetID(),
 	})
+
+	return createdUser, nil
+}
+
+func runCreateUserCmd(cmd *cobra.Command, args []string) {
+	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
+
+	username, email, password, err := getUserDetails(cmd)
+	if err != nil {
+		osExit(1)
+		return
+	}
+
+	dbConfig := getDatabaseConfigForCmd()
+	db, dbErr := database.New(dbConfig, log)
+	if dbErr != nil {
+		log.Error("Failed to connect to database", logger.Fields{"error": dbErr.Error()})
+		osExit(1)
+		return
+	}
+	defer func() { _ = db.Close() }()
+
+	_, runErr := runCreateUser(db, log, username, email, password)
+
+	if runErr != nil {
+		fmt.Fprintln(os.Stderr, "Error creating user.")
+		osExit(1)
+
+		return
+	}
 
 	fmt.Println("User created successfully!")
 }
