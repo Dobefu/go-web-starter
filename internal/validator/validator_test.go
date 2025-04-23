@@ -291,13 +291,13 @@ func TestFlashOperations(t *testing.T) {
 
 	session := sessions.Default(c)
 	session.AddFlash(123)
-	session.AddFlash("valid message")
+	session.AddFlash(message.Message{Body: "valid message"})
 	_ = session.Save()
 	messages = v.GetMessages()
 	assert.Len(t, messages, 1)
-	assert.Equal(t, "valid message", messages[0])
+	assert.Equal(t, "valid message", messages[0].Body)
 
-	c.Set("AddFlash", func(msg string) {
+	c.Set("AddFlash", func(msg message.Message) {
 		session := sessions.Default(c)
 		session.AddFlash(msg)
 		_ = session.Save()
@@ -306,7 +306,7 @@ func TestFlashOperations(t *testing.T) {
 	v.SetFlash(message.Message{Body: "test message"})
 	messages = v.GetMessages()
 	assert.Len(t, messages, 1)
-	assert.Equal(t, "test message", messages[0])
+	assert.Equal(t, "test message", messages[0].Body)
 }
 
 func TestEdgeCases(t *testing.T) {

@@ -57,18 +57,18 @@ func Flash() gin.HandlerFunc {
 			}
 		})
 
-		c.Set("GetFlash", func() string {
+		c.Set("GetFlash", func() message.Message {
 			session := sessions.Default(c)
 			flashes := session.Flashes()
 
 			if len(flashes) == 0 {
-				return ""
+				return message.Message{}
 			}
 
-			msg, ok := flashes[0].(string)
+			msg, ok := flashes[0].(message.Message)
 
 			if !ok {
-				return ""
+				return message.Message{}
 			}
 
 			err := session.Save()

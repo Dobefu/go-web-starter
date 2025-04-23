@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -116,13 +117,13 @@ func TestFlashMiddleware(t *testing.T) {
 		handler := Flash()
 		handler(c)
 
-		addFlash := c.MustGet("AddFlash").(func(string))
-		addFlash("test message")
+		addFlash := c.MustGet("AddFlash").(func(message.Message))
+		addFlash(message.Message{Body: "test message"})
 
-		getFlash := c.MustGet("GetFlash").(func() string)
-		message := getFlash()
+		getFlash := c.MustGet("GetFlash").(func() message.Message)
+		msg := getFlash()
 
-		assert.Equal(t, "test message", message)
+		assert.Equal(t, "test message", msg.Body)
 		assert.Empty(t, mockSess.flashes)
 	})
 
@@ -132,14 +133,14 @@ func TestFlashMiddleware(t *testing.T) {
 		handler := Flash()
 		handler(c)
 
-		addFlash := c.MustGet("AddFlash").(func(string))
-		addFlash("test message")
+		addFlash := c.MustGet("AddFlash").(func(message.Message))
+		addFlash(message.Message{Body: "test message"})
 
-		getFlash := c.MustGet("GetFlash").(func() string)
+		getFlash := c.MustGet("GetFlash").(func() message.Message)
 		message1 := getFlash()
 		message2 := getFlash()
 
-		assert.Equal(t, "test message", message1)
+		assert.Equal(t, "test message", message1.Body)
 		assert.Empty(t, message2)
 		assert.Empty(t, mockSess.flashes)
 	})
@@ -151,10 +152,10 @@ func TestFlashMiddleware(t *testing.T) {
 		handler := Flash()
 		handler(c)
 
-		getFlash := c.MustGet("GetFlash").(func() string)
+		getFlash := c.MustGet("GetFlash").(func() message.Message)
 		message := getFlash()
 
-		assert.Empty(t, message)
+		assert.Empty(t, message.Body)
 	})
 
 	t.Run("Session save errors", func(t *testing.T) {
@@ -164,12 +165,12 @@ func TestFlashMiddleware(t *testing.T) {
 		handler := Flash()
 		handler(c)
 
-		addFlash := c.MustGet("AddFlash").(func(string))
-		addFlash("test message")
+		addFlash := c.MustGet("AddFlash").(func(message.Message))
+		addFlash(message.Message{Body: "test message"})
 
-		getFlash := c.MustGet("GetFlash").(func() string)
+		getFlash := c.MustGet("GetFlash").(func() message.Message)
 		message := getFlash()
 
-		assert.Equal(t, "test message", message)
+		assert.Equal(t, "test message", message.Body)
 	})
 }
