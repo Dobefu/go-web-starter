@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -284,14 +285,14 @@ func TestFlashOperations(t *testing.T) {
 	messages = v.GetMessages()
 	assert.Empty(t, messages)
 
-	v.SetFlash("test message")
+	v.SetFlash(message.Message{Body: "test message"})
 	messages = v.GetMessages()
 	assert.Empty(t, messages)
 
 	session := sessions.Default(c)
 	session.AddFlash(123)
 	session.AddFlash("valid message")
-	session.Save()
+	_ = session.Save()
 	messages = v.GetMessages()
 	assert.Len(t, messages, 1)
 	assert.Equal(t, "valid message", messages[0])
@@ -299,10 +300,10 @@ func TestFlashOperations(t *testing.T) {
 	c.Set("AddFlash", func(msg string) {
 		session := sessions.Default(c)
 		session.AddFlash(msg)
-		session.Save()
+		_ = session.Save()
 	})
 
-	v.SetFlash("test message")
+	v.SetFlash(message.Message{Body: "test message"})
 	messages = v.GetMessages()
 	assert.Len(t, messages, 1)
 	assert.Equal(t, "test message", messages[0])
@@ -325,15 +326,15 @@ func TestEdgeCases(t *testing.T) {
 
 	session := sessions.Default(c)
 	session.Set(sessionKeyFormData, "{invalid json}")
-	session.Save()
+	_ = session.Save()
 	assert.Empty(t, v.GetFormData())
 
 	session.Set(sessionKeyErrors, "{invalid json}")
-	session.Save()
+	_ = session.Save()
 	assert.Empty(t, v.GetSessionErrors())
 
 	session.Set(sessionKeyErrors, nil)
-	session.Save()
+	_ = session.Save()
 	assert.Empty(t, v.GetSessionErrors())
 }
 
@@ -346,7 +347,7 @@ func TestGetSessionNilContext(t *testing.T) {
 func TestSetFlashEdgeCases(t *testing.T) {
 	v := New()
 
-	v.SetFlash("test message")
+	v.SetFlash(message.Message{Body: "test message"})
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -356,5 +357,5 @@ func TestSetFlashEdgeCases(t *testing.T) {
 	v.SetContext(c)
 
 	c.Set("AddFlash", "not a function")
-	v.SetFlash("test message")
+	v.SetFlash(message.Message{Body: "test message"})
 }

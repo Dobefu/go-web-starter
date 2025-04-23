@@ -8,6 +8,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/Dobefu/go-web-starter/internal/logger"
+	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
@@ -101,7 +102,9 @@ func LoginPost(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Set("userID", foundUser.GetID())
 
-	if err := session.Save(); err != nil {
+	err = session.Save()
+
+	if err != nil {
 		log.Error("Failed to save session after login", map[string]any{"email": email, "error": err.Error()})
 		RenderRouteHTML(c, GenericErrorData(c))
 
@@ -113,7 +116,7 @@ func LoginPost(c *gin.Context) {
 		"userID": foundUser.GetID(),
 	})
 
-	v.SetFlash("Successfully logged in!")
+	v.SetFlash(message.Message{Body: "Successfully logged in!"})
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -128,6 +131,6 @@ func redirectWithError(c *gin.Context, v *validator.Validator, email string, fla
 	}
 
 	v.SetErrors()
-	v.SetFlash(flashMsg)
+	v.SetFlash(message.Message{Body: flashMsg})
 	c.Redirect(http.StatusSeeOther, "/login")
 }

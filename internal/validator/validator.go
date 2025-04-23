@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -112,7 +113,7 @@ func (v *Validator) Clear() {
 	if session := v.getSession(); session != nil {
 		session.Delete(sessionKeyFormData)
 		session.Delete(sessionKeyErrors)
-		session.Save()
+		_ = session.Save()
 	}
 }
 
@@ -155,7 +156,7 @@ func (v *Validator) GetFormValue(r *http.Request, field string) string {
 	return r.FormValue(field)
 }
 
-func (v *Validator) SetFlash(message string) {
+func (v *Validator) SetFlash(msg message.Message) {
 	if v.context == nil {
 		return
 	}
@@ -163,31 +164,33 @@ func (v *Validator) SetFlash(message string) {
 	addFlash, exists := v.context.Get("AddFlash")
 
 	if exists {
-		flashFunc, ok := addFlash.(func(string))
+		flashFunc, ok := addFlash.(func(message.Message))
 
 		if ok {
-			flashFunc(message)
+			flashFunc(msg)
 		}
 	}
 }
 
-func (v *Validator) GetMessages() []string {
+func (v *Validator) GetMessages() []message.Message {
 	session := v.getSession()
 
 	if session == nil {
-		return make([]string, 0)
+		return make([]message.Message, 0)
 	}
 
 	messages := session.Flashes()
-	result := make([]string, 0, len(messages))
+	result := make([]message.Message, 0, len(messages))
 
 	for _, msg := range messages {
-		if str, ok := msg.(string); ok {
-			result = append(result, str)
+		val, ok := msg.(message.Message)
+
+		if ok {
+			result = append(result, val)
 		}
 	}
 
-	session.Save()
+	_ = session.Save()
 
 	return result
 }
@@ -206,7 +209,7 @@ func (v *Validator) SetFormData(values map[string]string) {
 	}
 
 	session.Set(sessionKeyFormData, string(formDataJSON))
-	session.Save()
+	_ = session.Save()
 }
 
 func (v *Validator) SetErrors() {
@@ -222,7 +225,7 @@ func (v *Validator) SetErrors() {
 	}
 
 	session.Set(sessionKeyErrors, string(errorsJSON))
-	session.Save()
+	_ = session.Save()
 }
 
 func (v *Validator) GetFormData() map[string]string {
@@ -244,7 +247,7 @@ func (v *Validator) GetFormData() map[string]string {
 	}
 
 	session.Delete(sessionKeyFormData)
-	session.Save()
+	_ = session.Save()
 
 	return formData
 }
@@ -267,7 +270,7 @@ func (v *Validator) GetSessionErrors() map[string][]string {
 	}
 
 	session.Delete(sessionKeyErrors)
-	session.Save()
+	_ = session.Save()
 
 	return errors
 }
@@ -280,6 +283,6 @@ func (v *Validator) ClearSession() {
 		session.Delete(sessionKeyErrors)
 		session.Flashes()
 
-		session.Save()
+		_ = session.Save()
 	}
 }
