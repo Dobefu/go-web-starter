@@ -93,7 +93,7 @@ func TestCSRFMiddleware(t *testing.T) {
 				if tt.csrfToken != "" {
 					session := sessions.Default(c)
 					session.Set("csrf_token", "valid-token")
-					session.Save()
+					_ = session.Save()
 				}
 
 				c.Status(http.StatusOK)

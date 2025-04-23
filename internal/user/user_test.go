@@ -58,19 +58,6 @@ func (m *mockDatabase) Stats() sql.DBStats {
 	return sql.DBStats{}
 }
 
-type mockDatabaseWithQueryRowError struct {
-	mockDatabase
-	queryRowError error
-}
-
-func (m *mockDatabaseWithQueryRowError) QueryRow(query string, args ...any) *sql.Row {
-	return nil
-}
-
-func (m *mockDatabaseWithQueryRowError) Stats() sql.DBStats {
-	return sql.DBStats{}
-}
-
 func setupUserTests() (user User) {
 	return User{
 		id:        testUserID,

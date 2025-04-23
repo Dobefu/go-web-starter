@@ -164,7 +164,7 @@ func captureStderr(f func()) (string, error) {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stderr = originalStderr
 
 	var buf bytes.Buffer

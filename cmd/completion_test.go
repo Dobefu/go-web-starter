@@ -57,11 +57,11 @@ func TestRunCompletionCmd(t *testing.T) {
 
 			err = runCompletionCmd(rootCmd, []string{tt.shellType})
 
-			w.Close()
+			_ = w.Close()
 			os.Stdout = oldStdout
 
 			var buf bytes.Buffer
-			buf.ReadFrom(r)
+			_, _ = buf.ReadFrom(r)
 
 			if tt.wantErr {
 				assert.Error(t, err)

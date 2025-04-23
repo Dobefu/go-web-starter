@@ -28,7 +28,7 @@ func CSRF() gin.HandlerFunc {
 		if token == nil || formToken == "" || token.(string) != formToken {
 			session := sessions.Default(c)
 			session.AddFlash("Invalid or expired form submission. Please try again.")
-			session.Save()
+			_ = session.Save()
 
 			c.Redirect(http.StatusSeeOther, c.Request.URL.Path)
 			c.Abort()
@@ -56,7 +56,7 @@ func GetCSRFToken(c *gin.Context) string {
 
 		token = base64.StdEncoding.EncodeToString(b)
 		session.Set("csrf_token", token)
-		session.Save()
+		_ = session.Save()
 	}
 
 	return token.(string)

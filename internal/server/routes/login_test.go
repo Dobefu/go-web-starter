@@ -33,7 +33,7 @@ func setupTestRouter() (*gin.Engine, sqlmock.Sqlmock, *sql.DB, error) {
 	router.Use(sessions.Sessions("mysession", store))
 	router.Use(middleware.Database(mockDB))
 	router.SetFuncMap(server_utils.TemplateFuncMap())
-	templates.LoadTemplates(router)
+	_ = templates.LoadTemplates(router)
 
 	return router, mockSQL, mockDB, nil
 }
@@ -41,7 +41,7 @@ func setupTestRouter() (*gin.Engine, sqlmock.Sqlmock, *sql.DB, error) {
 func TestLoginGET(t *testing.T) {
 	router, _, mockDB, err := setupTestRouter()
 	assert.NoError(t, err)
-	defer mockDB.Close()
+	defer func() { _ = mockDB.Close() }()
 
 	router.GET("/", Login)
 
@@ -55,7 +55,7 @@ func TestLoginGET(t *testing.T) {
 func TestLoginPostSuccess(t *testing.T) {
 	router, mockSQL, mockDB, err := setupTestRouter()
 	assert.NoError(t, err)
-	defer mockDB.Close()
+	defer func() { _ = mockDB.Close() }()
 
 	router.POST("/login", LoginPost)
 
@@ -84,7 +84,7 @@ func TestLoginPostSuccess(t *testing.T) {
 func TestLoginPostParse(t *testing.T) {
 	router, _, mockDB, err := setupTestRouter()
 	assert.NoError(t, err)
-	defer mockDB.Close()
+	defer func() { _ = mockDB.Close() }()
 
 	router.POST("/login", LoginPost)
 
