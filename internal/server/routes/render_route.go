@@ -7,12 +7,17 @@ import (
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/templates"
+	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
 func RenderRouteHTML(c *gin.Context, routeData RouteData) {
+	v := validator.New()
+	v.SetContext(c)
+
 	var canonical string
 
 	if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
@@ -27,6 +32,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		Nonce     string
 		BuildHash string
 		Canonical string
+		Messages  []message.Message
 	}{
 		RouteData: routeData,
 		SiteName:  viper.GetString("site.name"),
@@ -34,6 +40,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		Nonce:     c.GetString("nonce"),
 		BuildHash: config.BuildHash,
 		Canonical: canonical,
+		Messages:  v.GetMessages(),
 	}
 
 	if gin.Mode() == gin.DebugMode {

@@ -3,14 +3,12 @@ package routes
 import (
 	"net/http"
 
-	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/gin-gonic/gin"
 )
 
 type FormData struct {
-	Values   map[string]string
-	Errors   map[string][]string
-	Messages []message.Message
+	Values map[string]string
+	Errors map[string][]string
 }
 
 type RouteData struct {

@@ -28,9 +28,8 @@ func Login(c *gin.Context) {
 		Title:       "Log In",
 		Description: "Sign in to your account",
 		FormData: FormData{
-			Values:   v.GetFormData(),
-			Errors:   v.GetSessionErrors(),
-			Messages: v.GetMessages(),
+			Values: v.GetFormData(),
+			Errors: v.GetSessionErrors(),
 		},
 		CSRFToken: csrfToken,
 	}

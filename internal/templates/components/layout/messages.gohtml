@@ -1,6 +1,6 @@
 {{- define "components/layout/messages" -}}
-  {{- if .FormData.Messages -}}
-    {{- range $msg := .FormData.Messages -}}
+  {{- if .Messages -}}
+    {{- range $msg := .Messages -}}
       <div
         class="rounded-md bg-red-50 p-4 text-sm font-medium text-red-800 shadow"
       >
