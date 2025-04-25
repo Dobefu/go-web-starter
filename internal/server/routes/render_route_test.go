@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/Dobefu/go-web-starter/internal/templates"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -17,8 +19,9 @@ func TestRenderRouteHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, r := gin.CreateTestContext(w)
 
-	req, _ := http.NewRequest("GET", "/", nil)
-	c.Request = req
+	store := cookie.NewStore([]byte("secret"))
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	sessions.Sessions("mysession", store)(c)
 
 	viper.Set("site.name", "Test Site")
 	viper.Set("site.host", "http://localhost:8080")
@@ -43,20 +46,21 @@ func TestRenderRouteHTML(t *testing.T) {
 	})
 
 	t.Run("Cached Template Rendering", func(t *testing.T) {
-		tmpl := template.Must(template.New("test.tmpl").Parse("Hello {{.Title}}"))
+		tmpl := template.Must(template.New("test.gohtml").Parse("Hello {{.Title}}"))
 		cache := templates.GetTemplateCache()
-		cache.Set("test.tmpl", tmpl)
+		cache.Set("test.gohtml", tmpl)
 
 		routeData := RouteData{
-			Template:   "test.tmpl",
+			Template:   "test.gohtml",
 			HttpStatus: http.StatusOK,
 			Title:      "Test Page",
 		}
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		req, _ := http.NewRequest("GET", "/", nil)
-		c.Request = req
+		c.Request, _ = http.NewRequest("GET", "/", nil)
+		sessions.Sessions("mysession", store)(c)
+
 		RenderRouteHTML(c, routeData)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -64,20 +68,21 @@ func TestRenderRouteHTML(t *testing.T) {
 	})
 
 	t.Run("Template Execution Error", func(t *testing.T) {
-		tmpl := template.Must(template.New("error.tmpl").Parse("{{.BogusField}}"))
+		tmpl := template.Must(template.New("error.gohtml").Parse("{{.BogusField}}"))
 		cache := templates.GetTemplateCache()
-		cache.Set("error.tmpl", tmpl)
+		cache.Set("error.gohtml", tmpl)
 
 		routeData := RouteData{
-			Template:   "error.tmpl",
+			Template:   "error.gohtml",
 			HttpStatus: http.StatusOK,
 			Title:      "Test Page",
 		}
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		req, _ := http.NewRequest("GET", "/", nil)
-		c.Request = req
+		c.Request, _ = http.NewRequest("GET", "/", nil)
+		sessions.Sessions("mysession", store)(c)
+
 		RenderRouteHTML(c, routeData)
 
 		assert.NotNil(t, c.Errors.Last())
