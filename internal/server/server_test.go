@@ -138,6 +138,16 @@ func (m *MockRedis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error)
 	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
 }
 
+func (m *MockRedis) SetWithTTL(ctx context.Context, key string, value any) (*redisClient.StatusCmd, error) {
+	args := m.Called(ctx, key, value)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
+}
+
 func newTestServer(port int) ServerInterface {
 	gin.SetMode(gin.TestMode)
 	mockRouter := &MockRouter{}

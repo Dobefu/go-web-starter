@@ -71,6 +71,14 @@ func (m *mockRedisClient) Close() error {
 	return args.Error(0)
 }
 
+func (m *mockRedisClient) SetWithTTL(ctx context.Context, key string, value any) *redisClient.StatusCmd {
+	args := m.Called(ctx, key, value)
+	cmd := redisClient.NewStatusCmd(ctx)
+	cmd.SetErr(args.Error(0))
+
+	return cmd
+}
+
 type pingErrClient struct {
 	mockRedisClient
 }

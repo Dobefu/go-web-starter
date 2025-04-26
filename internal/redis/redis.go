@@ -18,6 +18,7 @@ type RedisInterface interface {
 	GetRange(ctx context.Context, key string, start, end int64) (*redisClient.StringCmd, error)
 	SetRange(ctx context.Context, key string, offset int64, value string) (*redisClient.IntCmd, error)
 	FlushDB(ctx context.Context) (*redisClient.StatusCmd, error)
+	SetWithTTL(ctx context.Context, key string, value any) (*redisClient.StatusCmd, error)
 }
 
 type Redis struct {
@@ -210,6 +211,33 @@ func (d *Redis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error) {
 
 	if cmd.Err() != nil && d.logger != nil {
 		d.logger.Error("Redis FLUSHDB failed", logger.Fields{
+			"error": cmd.Err().Error(),
+		})
+	}
+
+	return cmd, cmd.Err()
+}
+
+func (d *Redis) SetWithTTL(ctx context.Context, key string, value any) (*redisClient.StatusCmd, error) {
+	if d.db == nil {
+		return nil, errNotInitialized
+	}
+
+	if d.isClientClosed() {
+		return nil, errClientClosed
+	}
+
+	if d.logger != nil {
+		d.logger.Debug("Executing Redis SET with KeepTTL", logger.Fields{
+			"key": key,
+		})
+	}
+
+	cmd := d.db.SetArgs(ctx, key, value, redisClient.SetArgs{KeepTTL: true})
+
+	if cmd.Err() != nil && d.logger != nil {
+		d.logger.Error("Redis SET with KeepTTL failed", logger.Fields{
+			"key":   key,
 			"error": cmd.Err().Error(),
 		})
 	}

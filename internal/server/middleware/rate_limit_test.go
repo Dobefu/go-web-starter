@@ -86,6 +86,16 @@ func (m *MockRedis) FlushDB(ctx context.Context) (*redisClient.StatusCmd, error)
 	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
 }
 
+func (m *MockRedis) SetWithTTL(ctx context.Context, key string, value any) (*redisClient.StatusCmd, error) {
+	args := m.Called(ctx, key, value)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*redisClient.StatusCmd), args.Error(1)
+}
+
 func createMockStringCmd(val string, err error) *redisClient.StringCmd {
 	cmd := redisClient.NewStringCmd(context.Background())
 
@@ -212,10 +222,18 @@ func TestRateLimiterAllow(t *testing.T) {
 
 				mockCmd = createMockStringCmd(fmt.Sprintf("%d:%d", tt.tokens, lastUpdate.Unix()), nil)
 				mockRedis.On("Get", mock.Anything, mock.Anything).Return(mockCmd, nil)
-				mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-					createMockStatusCmd(tt.setError),
-					tt.setError,
-				)
+
+				if tt.name == "existing client with tokens" || tt.name == "no tokens left" || tt.name == "set error on no tokens" || tt.name == "set error on update" || tt.name == "token refill" {
+					mockRedis.On("SetWithTTL", mock.Anything, mock.Anything, mock.Anything).Return(
+						createMockStatusCmd(tt.setError),
+						tt.setError,
+					)
+				} else {
+					mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+						createMockStatusCmd(tt.setError),
+						tt.setError,
+					)
+				}
 			}
 
 			limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
@@ -297,10 +315,17 @@ func TestRateLimitMiddleware(t *testing.T) {
 				mockRedis.On("Get", mock.Anything, key).Return(mockCmd, tt.getError)
 
 				if tt.getError == nil || tt.getError.Error() == redisNilErr {
-					mockRedis.On("Set", mock.Anything, key, mock.Anything, mock.Anything).Return(
-						createMockStatusCmd(nil),
-						nil,
-					)
+					if tt.getError != nil && tt.getError.Error() == redisNilErr {
+						mockRedis.On("Set", mock.Anything, key, mock.Anything, mock.Anything).Return(
+							createMockStatusCmd(nil),
+							nil,
+						)
+					} else {
+						mockRedis.On("SetWithTTL", mock.Anything, key, mock.Anything).Return(
+							createMockStatusCmd(nil),
+							nil,
+						)
+					}
 				}
 
 				limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
@@ -503,6 +528,10 @@ func TestRateLimit(t *testing.T) {
 				mockRedis.On("Set", mock.Anything, mock.MatchedBy(func(k string) bool {
 					return strings.HasPrefix(k, "rate_limit:")
 				}), mock.Anything, mock.Anything).Return(createMockStatusCmd(nil), nil)
+
+				mockRedis.On("SetWithTTL", mock.Anything, mock.MatchedBy(func(k string) bool {
+					return strings.HasPrefix(k, "rate_limit:")
+				}), mock.Anything).Return(createMockStatusCmd(nil), nil)
 
 				limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
 				limiter.timeNow = func() time.Time { return now }

@@ -170,7 +170,13 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 
 	if tokens <= 0 {
 		value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
-		_, err = rl.redis.Set(ctx, key, value, rl.rate*2)
+
+		if err != nil && err.Error() == "redis: nil" {
+			expiration := rl.rate
+			_, err = rl.redis.Set(ctx, key, value, expiration)
+		} else {
+			_, err = rl.redis.SetWithTTL(ctx, key, value)
+		}
 
 		if err != nil {
 			rl.logger.Error("Failed to update rate limit data", logger.Fields{
@@ -189,7 +195,13 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 
 	tokens -= 1
 	value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
-	_, err = rl.redis.Set(ctx, key, value, rl.rate*2)
+
+	if err != nil && err.Error() == "redis: nil" {
+		expiration := rl.rate
+		_, err = rl.redis.Set(ctx, key, value, expiration)
+	} else {
+		_, err = rl.redis.SetWithTTL(ctx, key, value)
+	}
 
 	if err != nil {
 		rl.logger.Error("Failed to update rate limit data", logger.Fields{
