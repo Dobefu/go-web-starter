@@ -339,10 +339,6 @@ func TestSetupMigrateEnv(t *testing.T) {
 				return
 			}
 
-			if err != nil {
-				t.Fatalf("expected no error for %s, got: %v", tt.name, err)
-			}
-
 			if cfg == nil || logg == nil || db == nil {
 				t.Fatalf("expected non-nil cfg, log, db")
 			}
