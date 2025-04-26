@@ -47,11 +47,29 @@ func setupMigrateTest(t *testing.T) func() {
 
 	viper.Reset()
 
+	origSetupEnv := migrateSetupEnv
+	origUpFunc := migrateUpFunc
+	origDownFunc := migrateDownFunc
+	origVersionFunc := migrateVersionFunc
+
+	migrateSetupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
+		return &config.Config{}, &logger.Logger{}, &mockDB{}, nil
+	}
+
+	migrateUpFunc = func(cfg config.Database) error { return nil }
+	migrateDownFunc = func(cfg config.Database) error { return nil }
+	migrateVersionFunc = func(cfg config.Database) (int, error) { return 1, nil }
+
 	return func() {
 		viper.Reset()
 		os.Args = originalArgs
 		err := os.Chdir(originalWd)
 		assert.NoError(t, err)
+
+		migrateSetupEnv = origSetupEnv
+		migrateUpFunc = origUpFunc
+		migrateDownFunc = origDownFunc
+		migrateVersionFunc = origVersionFunc
 	}
 }
 
@@ -75,11 +93,13 @@ func TestMigrateUpCommand(t *testing.T) {
 	cleanup := setupMigrateTest(t)
 	defer cleanup()
 
+	migrateUpFunc = func(cfg config.Database) error { return fmt.Errorf("connect: connection refused") }
+
 	stdout, stderr, err := executeCommand("migrate", "up")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "connect: connection refused")
-	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Contains(t, stderr, "Error: connect: connection refused")
 	assert.Empty(t, stdout)
 }
 
@@ -87,11 +107,13 @@ func TestMigrateDownCommand(t *testing.T) {
 	cleanup := setupMigrateTest(t)
 	defer cleanup()
 
+	migrateDownFunc = func(cfg config.Database) error { return fmt.Errorf("connect: connection refused") }
+
 	stdout, stderr, err := executeCommand("migrate", "down")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "connect: connection refused")
-	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Contains(t, stderr, "Error: connect: connection refused")
 	assert.Empty(t, stdout)
 }
 
@@ -99,17 +121,21 @@ func TestMigrateVersionCommand(t *testing.T) {
 	cleanup := setupMigrateTest(t)
 	defer cleanup()
 
+	migrateVersionFunc = func(cfg config.Database) (int, error) { return 0, fmt.Errorf("connect: connection refused") }
+
 	stdout, stderr, err := executeCommand("migrate", "version", "1")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "connect: connection refused")
-	assert.Contains(t, stderr, fmt.Sprintf(`ERROR "%s"`, errDbConnection))
+	assert.Contains(t, stderr, "Error: connect: connection refused")
 	assert.Empty(t, stdout)
+
+	migrateVersionFunc = func(cfg config.Database) (int, error) { return 0, nil }
 
 	stdout, stderr, err = executeCommand("migrate", "version", "abc")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), fmt.Sprintf(errInvalidVersionFmt, "abc"))
-	assert.NotContains(t, stderr, errDbConnection)
+	assert.NotContains(t, stderr, "connect: connection refused")
 	assert.Empty(t, stdout)
 
 	stdout, _, err = executeCommand("migrate", "version")

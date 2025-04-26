@@ -43,6 +43,13 @@ var migrateCmd = &cobra.Command{
 	Short: "Run database migrations",
 }
 
+var (
+	migrateSetupEnv    = setupMigrateEnv
+	migrateUpFunc      = database.MigrateUp
+	migrateDownFunc    = database.MigrateDown
+	migrateVersionFunc = database.MigrateVersion
+)
+
 func setupMigrateEnv(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
 	viper.SetConfigFile(configFileNameDefault)
 	viper.AddConfigPath(configPathDefault)
@@ -186,7 +193,7 @@ var migrateUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all available migrations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrateUp(cmd, setupMigrateEnv, database.MigrateUp)
+		return runMigrateUp(cmd, migrateSetupEnv, migrateUpFunc)
 	},
 }
 
@@ -194,7 +201,7 @@ var migrateDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Roll back the last migration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrateDown(cmd, setupMigrateEnv, database.MigrateDown)
+		return runMigrateDown(cmd, migrateSetupEnv, migrateDownFunc)
 	},
 }
 
@@ -203,7 +210,7 @@ var migrateVersionCmd = &cobra.Command{
 	Short: "Migrate to a specific version",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrateVersion(cmd, args, setupMigrateEnv, database.MigrateVersion)
+		return runMigrateVersion(cmd, args, migrateSetupEnv, migrateVersionFunc)
 	},
 }
 
