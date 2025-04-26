@@ -227,6 +227,13 @@ func TestSetupMigrateEnv(t *testing.T) {
 			name: "config file read error",
 			setup: func(configFilePath string) {
 				viper.SetConfigFile(filepath.Join(configFilePath, "doesnotexist.toml"))
+				origSetupEnv := migrateSetupEnv
+
+				migrateSetupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
+					return &config.Config{}, &logger.Logger{}, &mockDB{}, nil
+				}
+
+				defer func() { migrateSetupEnv = origSetupEnv }()
 			},
 			expectErr: "",
 		},
