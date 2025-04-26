@@ -263,7 +263,12 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 	limiter, err := NewRateLimiter(capacity, rate)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create rate limiter: %v", err))
+		logger.New(config.GetLogLevel(), os.Stdout).Error("Failed to create rate limiter", logger.Fields{"error": err.Error()})
+
+		return func(c *gin.Context) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: rate limiter unavailable"})
+			c.Abort()
+		}
 	}
 
 	return func(c *gin.Context) {

@@ -463,7 +463,6 @@ func TestRateLimit(t *testing.T) {
 		tokens       int
 		redisError   error
 		expectedCode int
-		shouldPanic  bool
 	}{
 		{
 			name:         "redis disabled",
@@ -483,10 +482,10 @@ func TestRateLimit(t *testing.T) {
 			expectedCode: http.StatusTooManyRequests,
 		},
 		{
-			name:         "redis error causes panic",
+			name:         "redis error returns 500",
 			redisEnabled: true,
 			redisError:   errors.New("redis connection error"),
-			shouldPanic:  true,
+			expectedCode: http.StatusInternalServerError,
 		},
 	}
 
@@ -498,14 +497,7 @@ func TestRateLimit(t *testing.T) {
 			config.DefaultConfig.Redis.Enable = tt.redisEnabled
 
 			if tt.redisEnabled {
-				if tt.shouldPanic {
-					defer func() {
-						r := recover()
-						assert.NotNil(t, r)
-						panicMsg := fmt.Sprintf("%v", r)
-						assert.Contains(t, panicMsg, "Failed to create rate limiter")
-					}()
-
+				if tt.redisError != nil {
 					originalNew := redis.New
 					defer func() { redis.New = originalNew }()
 
@@ -513,7 +505,17 @@ func TestRateLimit(t *testing.T) {
 						return nil, tt.redisError
 					}
 
-					RateLimit(5, time.Second)
+					handler := RateLimit(5, time.Second)
+					router := setupTestRouter(handler)
+					w := httptest.NewRecorder()
+
+					req, err := http.NewRequest("GET", "/test", nil)
+					assert.NoError(t, err)
+
+					req.RemoteAddr = testClientIP + ":1234"
+					router.ServeHTTP(w, req)
+					assert.Equal(t, tt.expectedCode, w.Code)
+
 					return
 				}
 
