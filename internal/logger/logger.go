@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"time"
 
@@ -37,6 +38,10 @@ type Logger struct {
 }
 
 func New(level Level, output io.Writer) *Logger {
+	if output == nil {
+		output = os.Stdout
+	}
+
 	return &Logger{
 		level:  level,
 		output: output,
@@ -51,6 +56,10 @@ func (l *Logger) WithRequestID(requestID string) *Logger {
 
 func (l *Logger) log(level Level, msg string, fields Fields) {
 	if level < l.level {
+		return
+	}
+
+	if l.output == nil {
 		return
 	}
 
