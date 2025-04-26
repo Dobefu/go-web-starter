@@ -179,7 +179,18 @@ func (v *Validator) GetMessages() []message.Message {
 		return make([]message.Message, 0)
 	}
 
-	messages := session.Flashes()
+	var messages []any
+
+	defer func() {
+		if r := recover(); r != nil {
+			session.Clear()
+			_ = session.Save()
+
+			messages = nil
+		}
+	}()
+
+	messages = session.Flashes()
 	result := make([]message.Message, 0, len(messages))
 
 	for _, msg := range messages {
