@@ -24,7 +24,7 @@ func setupMigrateTest(t *testing.T) func() {
 	t.Helper()
 
 	tempDir := t.TempDir()
-	dummyConfigPath := filepath.Join(tempDir, "config.toml")
+	dummyConfigPath := filepath.Join(tempDir, defaultConfigFileName)
 	dummyConfigContent := `
 [Database]
   Host = "localhost"
@@ -172,13 +172,13 @@ func TestMigrateConfigFileNotFound(t *testing.T) {
 	_, _, err = executeCommand("migrate", "up")
 	assert.NoError(t, err)
 
-	_, statErr := os.Stat("config.toml")
+	_, statErr := os.Stat(defaultConfigFileName)
 	assert.NoError(t, statErr, "config.toml should be created")
 }
 
 func TestMigrateMalformedConfigFile(t *testing.T) {
 	tempDir := t.TempDir()
-	malformedConfigPath := filepath.Join(tempDir, "config.toml")
+	malformedConfigPath := filepath.Join(tempDir, defaultConfigFileName)
 	malformedContent := "[invalid toml = ?"
 
 	err := os.WriteFile(malformedConfigPath, []byte(malformedContent), 0600)
@@ -227,13 +227,6 @@ func TestSetupMigrateEnv(t *testing.T) {
 			name: "config file read error",
 			setup: func(configFilePath string) {
 				viper.SetConfigFile(filepath.Join(configFilePath, "doesnotexist.toml"))
-				origSetupEnv := migrateSetupEnv
-
-				migrateSetupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
-					return &config.Config{}, &logger.Logger{}, &mockDB{}, nil
-				}
-
-				defer func() { migrateSetupEnv = origSetupEnv }()
 			},
 			expectErr: "",
 		},
@@ -265,12 +258,11 @@ func TestSetupMigrateEnv(t *testing.T) {
 			configPath := t.TempDir()
 			_ = os.Setenv("VIPER_CONFIG_PATH", configPath)
 
-			configFilePath := filepath.Join(configPath, "config.toml")
-			_ = os.Remove(configFilePath)
+			configFilePath := filepath.Join(configPath, defaultConfigFileName)
 
 			origConfigFileNameDefault := configFileNameDefault
 			origConfigPathDefault := configPathDefault
-			configFileNameDefault = filepath.Base(configFilePath)
+			configFileNameDefault = defaultConfigFileName
 			configPathDefault = configPath
 
 			defer func() {
@@ -278,12 +270,20 @@ func TestSetupMigrateEnv(t *testing.T) {
 				configPathDefault = origConfigPathDefault
 			}()
 
+			origSetupEnv := migrateSetupEnv
+
+			migrateSetupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
+				return &config.Config{}, &logger.Logger{}, &mockDB{}, nil
+			}
+
+			defer func() { migrateSetupEnv = origSetupEnv }()
+
 			if tt.setup != nil {
 				tt.setup(configFilePath)
 			}
 
 			if tt.name == "config file read error" {
-				_ = os.Remove(configFilePath)
+				_ = os.Remove(filepath.Join(configPath, defaultConfigFileName))
 			}
 
 			var restoreDBNew func()
@@ -312,11 +312,7 @@ func TestSetupMigrateEnv(t *testing.T) {
 			viper.Reset()
 
 			if tt.name != "config file read error" {
-				viper.SetConfigFile(configFilePath)
-			}
-
-			if tt.name != "config file read error" && tt.name != "unmarshal error" {
-				viper.AddConfigPath(configPath)
+				viper.SetConfigFile(filepath.Join(configPath, defaultConfigFileName))
 			}
 
 			viper.AutomaticEnv()
