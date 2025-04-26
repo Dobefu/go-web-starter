@@ -18,7 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const errRateLimitExceeded = "Rate limit exceeded"
+const (
+	errRateLimitExceeded = "Rate limit exceeded"
+	errRedisNil          = "redis: nil"
+)
 
 type RateLimiter struct {
 	redis    redis.RedisInterface
@@ -126,7 +129,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	var tokens int
 	var lastUpdate time.Time
 
-	if err != nil && err.Error() == "redis: nil" {
+	if err != nil && err.Error() == errRedisNil {
 		tokens = rl.capacity
 		lastUpdate = now
 
@@ -174,7 +177,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	if tokens <= 0 {
 		value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
 
-		if err != nil && err.Error() == "redis: nil" {
+		if err != nil && err.Error() == errRedisNil {
 			expiration := rl.rate
 			_, err = rl.redis.Set(ctx, key, value, expiration)
 		} else {
@@ -199,7 +202,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	tokens -= 1
 	value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
 
-	if err != nil && err.Error() == "redis: nil" {
+	if err != nil && err.Error() == errRedisNil {
 		expiration := rl.rate
 		_, err = rl.redis.Set(ctx, key, value, expiration)
 	} else {
