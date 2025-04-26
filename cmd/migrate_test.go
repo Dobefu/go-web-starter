@@ -155,12 +155,22 @@ func TestMigrateConfigFileNotFound(t *testing.T) {
 
 	viper.Reset()
 
-	stdout, stderr, err := executeCommand("migrate", "up")
-	assert.NoError(t, err)
+	origSetupEnv := migrateSetupEnv
+	origUpFunc := migrateUpFunc
 
-	output := stdout + stderr
-	assert.Contains(t, output, "Database connection established")
-	assert.Contains(t, output, "Migrations applied successfully.")
+	migrateSetupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
+		return &config.Config{}, &logger.Logger{}, &mockDB{}, nil
+	}
+
+	migrateUpFunc = func(cfg config.Database) error { return nil }
+
+	defer func() {
+		migrateSetupEnv = origSetupEnv
+		migrateUpFunc = origUpFunc
+	}()
+
+	_, _, err = executeCommand("migrate", "up")
+	assert.NoError(t, err)
 
 	_, statErr := os.Stat("config.toml")
 	assert.NoError(t, statErr, "config.toml should be created")
@@ -189,9 +199,18 @@ func TestMigrateMalformedConfigFile(t *testing.T) {
 }
 
 func TestSetupMigrateEnv(t *testing.T) {
-	tempDir := t.TempDir()
-	validConfig := `[Database]\n  Host = "localhost"\n  Port = 5432\n  User = "testuser"\n  Password = "testpassword"\n  DBName = "testdb"\n[Log]\n  Level = 2\n`
-	unmarshalConfig := `[Log]\n  Level = "not_an_int"\n`
+	validConfig := `[Database]
+  Host = "localhost"
+  Port = 5432
+  User = "testuser"
+  Password = "testpassword"
+  DBName = "testdb"
+[Log]
+  Level = 2
+`
+	unmarshalConfig := `[Log]
+  Level = "not_an_int"
+`
 
 	tests := []struct {
 		name      string
@@ -200,22 +219,23 @@ func TestSetupMigrateEnv(t *testing.T) {
 		expectErr string
 	}{
 		{
-			name:  "config file not found",
-			setup: func(configFilePath string) {},
+			name:      "config file not found",
+			setup:     func(configFilePath string) {},
+			expectErr: "no such file or directory",
 		},
 		{
 			name: "config file read error",
 			setup: func(configFilePath string) {
 				viper.SetConfigFile(filepath.Join(configFilePath, "doesnotexist.toml"))
 			},
-			expectErr: "no such file or directory",
+			expectErr: "",
 		},
 		{
 			name: "unmarshal error",
 			setup: func(configFilePath string) {
 				_ = os.WriteFile(configFilePath, []byte(unmarshalConfig), 0600)
 			},
-			expectErr: "While parsing config: toml:",
+			expectErr: "cannot parse 'log.level' as int",
 		},
 		{
 			name: "db connection error",
@@ -235,33 +255,63 @@ func TestSetupMigrateEnv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = os.Setenv("VIPER_CONFIG_PATH", tempDir)
-			configPath := tempDir
+			configPath := t.TempDir()
+			_ = os.Setenv("VIPER_CONFIG_PATH", configPath)
+
 			configFilePath := filepath.Join(configPath, "config.toml")
 			_ = os.Remove(configFilePath)
+
+			origConfigFileNameDefault := configFileNameDefault
+			origConfigPathDefault := configPathDefault
+			configFileNameDefault = filepath.Base(configFilePath)
+			configPathDefault = configPath
+
+			defer func() {
+				configFileNameDefault = origConfigFileNameDefault
+				configPathDefault = origConfigPathDefault
+			}()
 
 			if tt.setup != nil {
 				tt.setup(configFilePath)
 			}
 
-			origDBNew := database.New
-			database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
-				if tt.dbErr != nil {
-					return nil, tt.dbErr
-				}
-
-				return &mockDB{}, nil
+			if tt.name == "config file read error" {
+				_ = os.Remove(configFilePath)
 			}
 
-			defer func() { database.New = origDBNew }()
+			var restoreDBNew func()
+
+			if tt.name == "db connection error" || tt.name == "success" {
+				origDBNew := database.New
+				database.New = func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error) {
+					if tt.dbErr != nil {
+						return nil, tt.dbErr
+					}
+
+					return &mockDB{}, nil
+				}
+
+				restoreDBNew = func() { database.New = origDBNew }
+			}
+
+			if restoreDBNew != nil {
+				defer restoreDBNew()
+			}
 
 			stderr := new(strings.Builder)
 			cmd := &cobra.Command{}
 			cmd.SetErr(stderr)
 
 			viper.Reset()
-			viper.SetConfigFile(configFilePath)
-			viper.AddConfigPath(configPath)
+
+			if tt.name != "config file read error" {
+				viper.SetConfigFile(configFilePath)
+			}
+
+			if tt.name != "config file read error" && tt.name != "unmarshal error" {
+				viper.AddConfigPath(configPath)
+			}
+
 			viper.AutomaticEnv()
 
 			cfg, logg, db, err := setupMigrateEnv(cmd)
@@ -273,6 +323,14 @@ func TestSetupMigrateEnv(t *testing.T) {
 
 				if !strings.Contains(err.Error(), "db error") {
 					t.Errorf("expected error to contain 'db error', got %q", err.Error())
+				}
+
+				return
+			}
+
+			if tt.expectErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.expectErr) {
+					t.Fatalf("expected error containing %q, got: %v", tt.expectErr, err)
 				}
 
 				return

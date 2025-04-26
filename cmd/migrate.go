@@ -13,10 +13,8 @@ import (
 )
 
 const (
-	configFileNameDefault = "config.toml"
-	configPathDefault     = "."
-	logLevelConfigKey     = "log.level"
-	logLevelDefault       = logger.InfoLevel
+	logLevelConfigKey = "log.level"
+	logLevelDefault   = logger.InfoLevel
 
 	errReadingConfig       = "Error reading config file, %s\n"
 	errUnmarshallingConfig = "Error unmarshalling config: %v\n"
@@ -36,6 +34,13 @@ const (
 
 	logFieldError   = "error"
 	logFieldVersion = "version"
+
+	defaultConfigPath = "."
+)
+
+var (
+	configFileNameDefault = defaultConfigFileName
+	configPathDefault     = defaultConfigPath
 )
 
 var migrateCmd = &cobra.Command{
@@ -51,8 +56,11 @@ var (
 )
 
 func setupMigrateEnv(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
-	viper.SetConfigFile(configFileNameDefault)
-	viper.AddConfigPath(configPathDefault)
+	if viper.ConfigFileUsed() == "" {
+		viper.SetConfigFile(configFileNameDefault)
+		viper.AddConfigPath(configPathDefault)
+	}
+
 	viper.AutomaticEnv()
 	viper.SetDefault(logLevelConfigKey, int(logLevelDefault))
 
@@ -63,7 +71,9 @@ func setupMigrateEnv(cmd *cobra.Command) (*config.Config, *logger.Logger, databa
 		return nil, nil, nil, err
 	}
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	err := viper.Unmarshal(&cfg)
+
+	if err != nil {
 		fmt.Fprintf(os.Stderr, errUnmarshallingConfig, err)
 		return nil, nil, nil, err
 	}
