@@ -86,9 +86,12 @@ func getRedisConfig() config.Redis {
 func defaultNew(port int) (ServerInterface, error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
 
-	if gin.Mode() != gin.TestMode {
+	if config.GetLogLevel() == logger.TraceLevel {
+		gin.SetMode(gin.DebugMode)
+		log.Trace("Setting Gin to debug mode due to TRACE log level", nil)
+	} else if gin.Mode() != gin.TestMode {
 		gin.SetMode(gin.ReleaseMode)
-		log.Debug("Setting Gin to release mode", nil)
+		log.Trace("Setting Gin to release mode", nil)
 	}
 
 	router := gin.New()

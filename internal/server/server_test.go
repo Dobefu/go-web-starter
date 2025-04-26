@@ -379,3 +379,8 @@ func TestStart(t *testing.T) {
 	err := srv.Start()
 	assert.NoError(t, err)
 }
+
+func init() {
+	gin.SetMode(gin.TestMode)
+	viper.SetDefault("log.level", logger.InfoLevel)
+}
