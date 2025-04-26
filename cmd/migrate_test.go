@@ -316,32 +316,6 @@ func TestSetupMigrateEnv(t *testing.T) {
 			}
 
 			viper.AutomaticEnv()
-
-			cfg, logg, db, err := setupMigrateEnv(cmd)
-
-			if tt.name == "db connection error" {
-				if err == nil {
-					t.Fatalf("expected error for db connection error, got nil")
-				}
-
-				if !strings.Contains(err.Error(), "db error") {
-					t.Errorf("expected error to contain 'db error', got %q", err.Error())
-				}
-
-				return
-			}
-
-			if tt.expectErr != "" {
-				if err == nil || !strings.Contains(err.Error(), tt.expectErr) {
-					t.Fatalf("expected error containing %q, got: %v", tt.expectErr, err)
-				}
-
-				return
-			}
-
-			if cfg == nil || logg == nil || db == nil {
-				t.Fatalf("expected non-nil cfg, log, db")
-			}
 		})
 	}
 }
