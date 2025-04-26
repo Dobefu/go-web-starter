@@ -16,6 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var findByEmail = user.FindByEmail
+var getSession = sessions.Default
+
 func Login(c *gin.Context) {
 	v := validator.New()
 	v.SetContext(c)
@@ -61,7 +64,16 @@ func LoginPost(c *gin.Context) {
 		return
 	}
 
-	db, ok := c.MustGet("db").(database.DatabaseInterface)
+	dbVal, exists := c.Get("db")
+
+	if !exists {
+		log.Error("Failed to get database connection from context", nil)
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	db, ok := dbVal.(database.DatabaseInterface)
 
 	if !ok {
 		log.Error("Failed to get database connection from context", nil)
@@ -70,7 +82,7 @@ func LoginPost(c *gin.Context) {
 		return
 	}
 
-	foundUser, err := user.FindByEmail(db, email)
+	foundUser, err := findByEmail(db, email)
 
 	if err != nil {
 		if errors.Is(err, user.ErrInvalidCredentials) {
@@ -98,7 +110,7 @@ func LoginPost(c *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(c)
+	session := getSession(c)
 	session.Set("userID", foundUser.GetID())
 
 	err = session.Save()
