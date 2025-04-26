@@ -275,7 +275,7 @@ func migrationTestDeps(
 	fakeDB := &mockDBClose{closeErr: closeErr}
 	fakeCfg := &config.Config{Database: config.Database{}}
 
-	setupEnv = func(cmd *cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
+	setupEnv = func(*cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error) {
 		if setupEnvErr != nil {
 			return nil, nil, nil, setupEnvErr
 		}

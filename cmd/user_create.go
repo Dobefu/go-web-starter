@@ -71,13 +71,13 @@ func getUserDetails(cmd *cobra.Command) (username, email, password string, err e
 	return username, email, password, nil
 }
 
-func runCreateUser(db database.DatabaseInterface, log *logger.Logger, username, email, password string) (*user.User, error) {
+func runCreateUser(repo user.UserRepository, log *logger.Logger, username, email, password string) (*user.User, error) {
 	log.Info("Attempting user creation in core logic...", logger.Fields{"email": email, "username": username})
 
-	createdUser, createErr := user.Create(db, username, email, password)
+	createdUser, createErr := user.CreateWithRepo(repo, username, email, password)
 
 	if createErr != nil {
-		log.Error("user.Create failed", logger.Fields{
+		log.Error("user.CreateWithRepo failed", logger.Fields{
 			"email":    email,
 			"username": username,
 			"error":    createErr.Error(),
@@ -95,34 +95,59 @@ func runCreateUser(db database.DatabaseInterface, log *logger.Logger, username, 
 	return createdUser, nil
 }
 
-func runCreateUserCmd(cmd *cobra.Command, args []string) {
+type userCreateDeps struct {
+	getUserDetails func(cmd *cobra.Command) (string, string, string, error)
+	dbNew          func(cfg config.Database, log *logger.Logger) (database.DatabaseInterface, error)
+	runCreateUser  func(repo user.UserRepository, log *logger.Logger, username, email, password string) (*user.User, error)
+	osExit         func(int)
+}
+
+func defaultUserCreateDeps() userCreateDeps {
+	return userCreateDeps{
+		getUserDetails: getUserDetails,
+		dbNew:          database.New,
+		runCreateUser:  runCreateUser,
+		osExit:         osExit,
+	}
+}
+
+func runCreateUserCmdWithDeps(cmd *cobra.Command, _ []string, deps userCreateDeps) {
 	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
 
-	username, email, password, err := getUserDetails(cmd)
+	username, email, password, err := deps.getUserDetails(cmd)
+
 	if err != nil {
-		osExit(1)
+		deps.osExit(1)
 		return
 	}
 
 	dbConfig := getDatabaseConfigForCmd()
-	db, dbErr := database.New(dbConfig, log)
+	db, dbErr := deps.dbNew(dbConfig, log)
+
 	if dbErr != nil {
 		log.Error("Failed to connect to database", logger.Fields{"error": dbErr.Error()})
-		osExit(1)
+		deps.osExit(1)
+
 		return
 	}
+
 	defer func() { _ = db.Close() }()
 
-	_, runErr := runCreateUser(db, log, username, email, password)
+	repo := &user.DbUserRepository{DB: db}
+	_, runErr := deps.runCreateUser(repo, log, username, email, password)
 
 	if runErr != nil {
 		fmt.Fprintln(os.Stderr, "Error creating user.")
-		osExit(1)
+		deps.osExit(1)
 
 		return
 	}
 
 	fmt.Println("User created successfully!")
+}
+
+func runCreateUserCmd(cmd *cobra.Command, args []string) {
+	runCreateUserCmdWithDeps(cmd, args, defaultUserCreateDeps())
 }
 
 func getDatabaseConfigForCmd() config.Database {

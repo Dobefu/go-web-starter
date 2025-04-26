@@ -149,8 +149,25 @@ func NewUser(username, email, hashedPassword string, status bool) *User {
 	}
 }
 
-func Create(db database.DatabaseInterface, username, email, plainPassword string) (*User, error) {
-	_, findErr := FindByEmail(db, email)
+type UserRepository interface {
+	FindByEmail(email string) (*User, error)
+	SaveUser(user *User) error
+}
+
+type DbUserRepository struct {
+	DB database.DatabaseInterface
+}
+
+func (r *DbUserRepository) FindByEmail(email string) (*User, error) {
+	return FindByEmail(r.DB, email)
+}
+
+func (r *DbUserRepository) SaveUser(user *User) error {
+	return user.Save(r.DB)
+}
+
+func CreateWithRepo(repo UserRepository, username, email, plainPassword string) (*User, error) {
+	_, findErr := repo.FindByEmail(email)
 
 	if findErr == nil {
 		return nil, fmt.Errorf("user with email %s already exists", email)
@@ -166,11 +183,16 @@ func Create(db database.DatabaseInterface, username, email, plainPassword string
 
 	newUser := NewUser(username, email, hashedPassword, true)
 
-	if saveErr := newUser.Save(db); saveErr != nil {
+	if saveErr := repo.SaveUser(newUser); saveErr != nil {
 		return nil, fmt.Errorf("failed to save new user: %w", saveErr)
 	}
 
 	return newUser, nil
+}
+
+func Create(db database.DatabaseInterface, username, email, plainPassword string) (*User, error) {
+	repo := &DbUserRepository{DB: db}
+	return CreateWithRepo(repo, username, email, plainPassword)
 }
 
 func New(id int, username, email, password string, status bool, createdAt, updatedAt time.Time) *User {
