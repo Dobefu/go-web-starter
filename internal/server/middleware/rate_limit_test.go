@@ -557,3 +557,36 @@ func TestRateLimit(t *testing.T) {
 		})
 	}
 }
+
+func TestRecentOffendersCache(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockRedis := new(MockRedis)
+	now := time.Now()
+	clientID := "offender-ip"
+	key := fmt.Sprintf("rate_limit:%s", clientID)
+	mockCmd := createMockStringCmd("0:"+fmt.Sprint(now.Unix()), nil)
+	mockRedis.On("Get", mock.Anything, key).Return(mockCmd, nil)
+	mockRedis.On("SetWithTTL", mock.Anything, key, mock.Anything).Return(createMockStatusCmd(nil), nil)
+
+	limiter := NewRateLimiterWithRedis(mockRedis, 5, time.Second)
+	limiter.timeNow = func() time.Time { return now }
+	handler := limiter.Middleware()
+	router := setupTestRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.RemoteAddr = clientID + ":1234"
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusTooManyRequests, w.Code)
+
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("GET", "/test", nil)
+	req2.RemoteAddr = clientID + ":1234"
+
+	start := time.Now()
+	router.ServeHTTP(w2, req2)
+	duration := time.Since(start)
+	assert.Equal(t, http.StatusTooManyRequests, w2.Code)
+	assert.Less(t, duration.Milliseconds(), int64(10), "Should return almost instantly due to in-memory cache")
+}

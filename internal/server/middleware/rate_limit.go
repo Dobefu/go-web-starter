@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
@@ -25,6 +26,8 @@ type RateLimiter struct {
 	rate     time.Duration
 	logger   *logger.Logger
 	timeNow  func() time.Time
+
+	recentOffenders sync.Map
 }
 
 func NewRateLimiter(capacity int, rate time.Duration) (*RateLimiter, error) {
@@ -222,7 +225,21 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !rl.Allow(getClientID(c)) {
+		clientID := getClientID(c)
+
+		if t, found := rl.recentOffenders.Load(clientID); found {
+			if time.Since(t.(time.Time)) < 2*time.Second {
+				c.JSON(http.StatusTooManyRequests, gin.H{
+					"error": errRateLimitExceeded,
+				})
+
+				c.Abort()
+				return
+			}
+		}
+
+		if !rl.Allow(clientID) {
+			rl.recentOffenders.Store(clientID, rl.timeNow())
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error": errRateLimitExceeded,
 			})

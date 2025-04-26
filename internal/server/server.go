@@ -173,7 +173,13 @@ func defaultNew(port int) (ServerInterface, error) {
 		log.Trace("Redis middleware initialized", nil)
 	}
 
-	router.Use(middleware.RateLimit(rateLimitRequests, rateLimitWindow))
+	if srv.redis != nil {
+		limiter := middleware.NewRateLimiterWithRedis(srv.redis, rateLimitRequests, rateLimitWindow)
+		router.Use(limiter.Middleware())
+	} else {
+		router.Use(middleware.RateLimit(rateLimitRequests, rateLimitWindow))
+	}
+
 	router.Use(middleware.CorsHeaders())
 	router.Use(middleware.CspHeaders())
 	router.Use(middleware.CacheHeaders())
