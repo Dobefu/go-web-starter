@@ -28,7 +28,12 @@ var contentFS = ContentFS{content: content}
 
 func MigrateDown(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
-	dbConn, _ := New(cfg, nil)
+	dbConn, err := New(cfg, nil)
+
+	if err != nil || dbConn == nil {
+		return fmt.Errorf("failed to initialize database connection: %v", err)
+	}
+
 	db, _ := dbConn.(*Database)
 
 	version, dirty := getMigrationState(db)
@@ -83,7 +88,12 @@ func MigrateDown(cfg config.Database) (err error) {
 
 func MigrateUp(cfg config.Database) (err error) {
 	log := logger.New(config.GetLogLevel(), os.Stdout)
-	dbConn, _ := New(cfg, nil)
+	dbConn, err := New(cfg, nil)
+
+	if err != nil || dbConn == nil {
+		return fmt.Errorf("failed to initialize database connection: %v", err)
+	}
+
 	db, _ := dbConn.(*Database)
 
 	err = createMigrationsTable(db)
@@ -137,7 +147,11 @@ func MigrateUp(cfg config.Database) (err error) {
 }
 
 func MigrateVersion(cfg config.Database) (version int, err error) {
-	dbConn, _ := New(cfg, nil)
+	dbConn, err := New(cfg, nil)
+
+	if err != nil || dbConn == nil {
+		return 0, fmt.Errorf("failed to initialize database connection: %v", err)
+	}
 
 	row := dbConn.QueryRow("SELECT version FROM migrations LIMIT 1")
 	err = row.Scan(&version)

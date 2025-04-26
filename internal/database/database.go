@@ -58,7 +58,10 @@ var New = func(cfg config.Database, log *logger.Logger) (DatabaseInterface, erro
 		return nil, err
 	}
 
-	log.Info("Database connection established", nil)
+	if log != nil {
+		log.Info("Database connection established", nil)
+	}
+
 	return dbInstance, nil
 }
 

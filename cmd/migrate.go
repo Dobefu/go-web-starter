@@ -53,10 +53,7 @@ func setupMigrateEnv(cmd *cobra.Command) (*config.Config, *logger.Logger, databa
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, errReadingConfig, err)
-
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, nil, nil, err
-		}
+		return nil, nil, nil, err
 	}
 
 	if err := viper.Unmarshal(&cfg); err != nil {
@@ -76,32 +73,120 @@ func setupMigrateEnv(cmd *cobra.Command) (*config.Config, *logger.Logger, databa
 	return &cfg, log, db, nil
 }
 
+func closeDBWithLog(db database.DatabaseInterface, log *logger.Logger) {
+	closeErr := db.Close()
+
+	if closeErr != nil {
+		log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
+	}
+}
+
+func runMigrateCommand(
+	cmd *cobra.Command,
+	setupEnv func(*cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error),
+	migrateFunc func(cfg config.Database) error,
+	runningMsg, successMsg, errorMsg string,
+	logFields logger.Fields,
+) error {
+	cfg, log, db, err := setupEnv(cmd)
+
+	if err != nil {
+		return err
+	}
+
+	defer closeDBWithLog(db, log)
+
+	log.Info(runningMsg, logFields)
+	err = migrateFunc(cfg.Database)
+
+	if err != nil {
+		log.Error(errorMsg, mergeFields(logFields, logger.Fields{logFieldError: err}))
+		return err
+	}
+
+	log.Info(successMsg, logFields)
+	return nil
+}
+
+func mergeFields(a, b logger.Fields) logger.Fields {
+	if len(a) == 0 {
+		return b
+	}
+
+	if len(b) == 0 {
+		return a
+	}
+
+	merged := make(logger.Fields, len(a)+len(b))
+
+	for k, v := range a {
+		merged[k] = v
+	}
+
+	for k, v := range b {
+		merged[k] = v
+	}
+
+	return merged
+}
+
+func runMigrateUp(
+	cmd *cobra.Command,
+	setupEnv func(*cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error),
+	migrateUp func(cfg config.Database) error,
+) error {
+	return runMigrateCommand(
+		cmd, setupEnv, migrateUp,
+		logMsgRunningUp, logMsgUpSuccess, logMsgUpFailed, nil,
+	)
+}
+
+func runMigrateDown(
+	cmd *cobra.Command,
+	setupEnv func(*cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error),
+	migrateDown func(cfg config.Database) error,
+) error {
+	return runMigrateCommand(
+		cmd, setupEnv, migrateDown,
+		logMsgRunningDown, logMsgDownSuccess, logMsgDownFailed, nil,
+	)
+}
+
+func runMigrateVersion(
+	cmd *cobra.Command,
+	args []string,
+	setupEnv func(*cobra.Command) (*config.Config, *logger.Logger, database.DatabaseInterface, error),
+	migrateVersion func(cfg config.Database) (int, error),
+) error {
+	if len(args) != 1 {
+		return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
+	}
+
+	versionStr := args[0]
+	version, err := strconv.Atoi(versionStr)
+
+	if err != nil {
+		return fmt.Errorf(errInvalidVersionFmt, versionStr)
+	}
+
+	migrateFunc := func(cfg config.Database) error {
+		_, err := migrateVersion(cfg)
+		return err
+	}
+
+	fields := logger.Fields{logFieldVersion: version}
+
+	return runMigrateCommand(
+		cmd, setupEnv, migrateFunc,
+		logMsgRunningVersion, logMsgVersionSuccess, logMsgVersionFailed, fields,
+	)
+}
+
 var migrateUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all available migrations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, log, db, err := setupMigrateEnv(cmd)
-
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if closeErr := db.Close(); closeErr != nil {
-				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
-			}
-		}()
-
-		log.Info(logMsgRunningUp, nil)
-		err = database.MigrateUp(cfg.Database)
-
-		if err != nil {
-			log.Error(logMsgUpFailed, logger.Fields{logFieldError: err})
-			return err
-		}
-
-		log.Info(logMsgUpSuccess, nil)
-		return nil
+		return runMigrateUp(cmd, setupMigrateEnv, database.MigrateUp)
 	},
 }
 
@@ -109,28 +194,7 @@ var migrateDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Roll back the last migration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, log, db, err := setupMigrateEnv(cmd)
-
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if closeErr := db.Close(); closeErr != nil {
-				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
-			}
-		}()
-
-		log.Info(logMsgRunningDown, nil)
-		err = database.MigrateDown(cfg.Database)
-
-		if err != nil {
-			log.Error(logMsgDownFailed, logger.Fields{logFieldError: err})
-			return err
-		}
-
-		log.Info(logMsgDownSuccess, nil)
-		return nil
+		return runMigrateDown(cmd, setupMigrateEnv, database.MigrateDown)
 	},
 }
 
@@ -139,35 +203,7 @@ var migrateVersionCmd = &cobra.Command{
 	Short: "Migrate to a specific version",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		versionStr := args[0]
-		version, err := strconv.Atoi(versionStr)
-
-		if err != nil {
-			return fmt.Errorf(errInvalidVersionFmt, versionStr)
-		}
-
-		cfg, log, db, err := setupMigrateEnv(cmd)
-
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if closeErr := db.Close(); closeErr != nil {
-				log.Error(errDbClose, logger.Fields{logFieldError: closeErr})
-			}
-		}()
-
-		log.Info(logMsgRunningVersion, logger.Fields{logFieldVersion: version})
-		_, err = database.MigrateVersion(cfg.Database)
-
-		if err != nil {
-			log.Error(logMsgVersionFailed, logger.Fields{logFieldVersion: version, logFieldError: err})
-			return err
-		}
-
-		log.Info(logMsgVersionSuccess, logger.Fields{logFieldVersion: version})
-		return nil
+		return runMigrateVersion(cmd, args, setupMigrateEnv, database.MigrateVersion)
 	},
 }
 
