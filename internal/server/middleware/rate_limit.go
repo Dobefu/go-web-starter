@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/redis"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -81,10 +83,34 @@ func getClientIP(c *gin.Context) string {
 	}
 
 	if c.Request.RemoteAddr != "" {
-		return strings.Split(c.Request.RemoteAddr, ":")[0]
+		host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+
+		if err == nil {
+			return host
+		}
+
+		return c.Request.RemoteAddr
 	}
 
 	return "unknown"
+}
+
+func getClientID(c *gin.Context) string {
+	if gin.Mode() == gin.DebugMode {
+		return "localdev"
+	}
+
+	session := sessions.Default(c)
+
+	if userID := session.Get("userID"); userID != nil {
+		return fmt.Sprintf("user:%v", userID)
+	}
+
+	if apiKey := c.GetHeader("X-API-Key"); apiKey != "" {
+		return fmt.Sprintf("apiKey:%s", apiKey)
+	}
+
+	return getClientIP(c)
 }
 
 func (rl *RateLimiter) Allow(clientID string) bool {
@@ -184,7 +210,7 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !rl.Allow(getClientIP(c)) {
+		if !rl.Allow(getClientID(c)) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error": errRateLimitExceeded,
 			})
@@ -212,11 +238,11 @@ func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		clientIP := getClientIP(c)
+		clientID := getClientID(c)
 
-		if !limiter.Allow(clientIP) {
+		if !limiter.Allow(clientID) {
 			limiter.logger.Warn(errRateLimitExceeded, logger.Fields{
-				"client_ip": clientIP,
+				"client_id": clientID,
 				"path":      c.Request.URL.Path,
 			})
 

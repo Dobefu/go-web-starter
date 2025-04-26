@@ -13,6 +13,8 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/redis"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	redisClient "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -108,6 +110,8 @@ func createMockStatusCmd(err error) *redisClient.StatusCmd {
 
 func setupTestRouter(handler gin.HandlerFunc) *gin.Engine {
 	router := gin.New()
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("test-session", store))
 	router.Use(handler)
 	router.GET("/test", func(c *gin.Context) {
 		c.Status(http.StatusOK)
