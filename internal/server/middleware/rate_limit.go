@@ -16,6 +16,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/redis"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	redisClient "github.com/redis/go-redis/v9"
 )
 
 const (
@@ -126,6 +127,21 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	val, err := rl.redis.Get(ctx, key)
 	now := rl.timeNow()
 
+	tokens, lastUpdate, parseErr := rl.getTokensAndLastUpdate(val, err, now, key)
+
+	if parseErr != nil {
+		return true
+	}
+
+	if rl.isRateLimited(tokens, lastUpdate, err, ctx, key) {
+		return false
+	}
+
+	rl.consumeTokenAndPersist(tokens, lastUpdate, err, ctx, key)
+	return true
+}
+
+func (rl *RateLimiter) getTokensAndLastUpdate(val *redisClient.StringCmd, err error, now time.Time, key string) (int, time.Time, error) {
 	var tokens int
 	var lastUpdate time.Time
 
@@ -138,92 +154,104 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 			"lastUpdate": lastUpdate,
 			"key":        key,
 		})
+
+		return tokens, lastUpdate, nil
 	} else if err != nil {
 		rl.logger.Error("Failed to get rate limit data", logger.Fields{
 			"error": err.Error(),
 			"key":   key,
 		})
 
-		return true
-	} else {
-		var lastUpdateUnix int64
-		_, err = fmt.Sscanf(val.Val(), "%d:%d", &tokens, &lastUpdateUnix)
-
-		if err != nil {
-			rl.logger.Error("Failed to parse rate limit data", logger.Fields{
-				"error": err.Error(),
-				"value": val.Val(),
-			})
-
-			return true
-		}
-
-		lastUpdate = time.Unix(lastUpdateUnix, 0)
-		elapsed := now.Sub(lastUpdate)
-		tokensToAdd := int(elapsed / rl.rate)
-
-		if tokensToAdd > 0 {
-			tokens = int(math.Min(float64(rl.capacity), float64(tokens+tokensToAdd)))
-			lastUpdate = now
-
-			rl.logger.Debug("Refilled tokens", logger.Fields{
-				"tokensToAdd": tokensToAdd,
-				"newTokens":   tokens,
-				"key":         key,
-			})
-		}
+		return 0, time.Time{}, err
 	}
 
-	if tokens <= 0 {
-		value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
+	var lastUpdateUnix int64
+	_, scanErr := fmt.Sscanf(val.Val(), "%d:%d", &tokens, &lastUpdateUnix)
 
-		if err != nil && err.Error() == errRedisNil {
-			expiration := rl.rate
-			_, err = rl.redis.Set(ctx, key, value, expiration)
-		} else {
-			_, err = rl.redis.SetWithTTL(ctx, key, value)
-		}
-
-		if err != nil {
-			rl.logger.Error("Failed to update rate limit data", logger.Fields{
-				"error": err.Error(),
-				"key":   key,
-			})
-		}
-
-		rl.logger.Debug(errRateLimitExceeded, logger.Fields{
-			"tokens": tokens,
-			"key":    key,
+	if scanErr != nil {
+		rl.logger.Error("Failed to parse rate limit data", logger.Fields{
+			"error": scanErr.Error(),
+			"value": val.Val(),
 		})
 
+		return 0, time.Time{}, scanErr
+	}
+
+	lastUpdate = time.Unix(lastUpdateUnix, 0)
+	elapsed := now.Sub(lastUpdate)
+	tokensToAdd := int(elapsed / rl.rate)
+
+	if tokensToAdd > 0 {
+		tokens = int(math.Min(float64(rl.capacity), float64(tokens+tokensToAdd)))
+		lastUpdate = now
+
+		rl.logger.Debug("Refilled tokens", logger.Fields{
+			"tokensToAdd": tokensToAdd,
+			"newTokens":   tokens,
+			"key":         key,
+		})
+	}
+
+	return tokens, lastUpdate, nil
+}
+
+func (rl *RateLimiter) isRateLimited(tokens int, lastUpdate time.Time, err error, ctx context.Context, key string) bool {
+	if tokens > 0 {
 		return false
 	}
 
-	tokens -= 1
 	value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
+
+	var setErr error
 
 	if err != nil && err.Error() == errRedisNil {
 		expiration := rl.rate
-		_, err = rl.redis.Set(ctx, key, value, expiration)
+		_, setErr = rl.redis.Set(ctx, key, value, expiration)
 	} else {
-		_, err = rl.redis.SetWithTTL(ctx, key, value)
+		_, setErr = rl.redis.SetWithTTL(ctx, key, value)
 	}
 
-	if err != nil {
+	if setErr != nil {
 		rl.logger.Error("Failed to update rate limit data", logger.Fields{
-			"error": err.Error(),
+			"error": setErr.Error(),
+			"key":   key,
+		})
+	}
+
+	rl.logger.Debug(errRateLimitExceeded, logger.Fields{
+		"tokens": tokens,
+		"key":    key,
+	})
+
+	return true
+}
+
+func (rl *RateLimiter) consumeTokenAndPersist(tokens int, lastUpdate time.Time, err error, ctx context.Context, key string) {
+	tokens--
+	value := fmt.Sprintf("%d:%d", tokens, lastUpdate.Unix())
+
+	var setErr error
+
+	if err != nil && err.Error() == errRedisNil {
+		expiration := rl.rate
+		_, setErr = rl.redis.Set(ctx, key, value, expiration)
+	} else {
+		_, setErr = rl.redis.SetWithTTL(ctx, key, value)
+	}
+
+	if setErr != nil {
+		rl.logger.Error("Failed to update rate limit data", logger.Fields{
+			"error": setErr.Error(),
 			"key":   key,
 		})
 
-		return true
+		return
 	}
 
 	rl.logger.Debug("Rate limit updated", logger.Fields{
 		"remainingTokens": tokens,
 		"key":             key,
 	})
-
-	return true
 }
 
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
