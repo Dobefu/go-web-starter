@@ -59,7 +59,7 @@ func (m *mockDatabase) Stats() sql.DBStats {
 	return sql.DBStats{}
 }
 
-func setupUserTests() (user User) {
+func setupUserTests() User {
 	return User{
 		id:        testUserID,
 		username:  testUsername,

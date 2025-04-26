@@ -172,3 +172,15 @@ func Create(db database.DatabaseInterface, username, email, plainPassword string
 
 	return newUser, nil
 }
+
+func New(id int, username, email, password string, status bool, createdAt, updatedAt time.Time) *User {
+	return &User{
+		id:        id,
+		username:  username,
+		email:     email,
+		password:  password,
+		status:    status,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+	}
+}

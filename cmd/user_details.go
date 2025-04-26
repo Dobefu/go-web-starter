@@ -27,7 +27,13 @@ func init() {
 	userDetailsCmd.Flags().IntP("id", "i", 0, "ID of the user to show details for (takes precedence over email)")
 }
 
-func runUserDetails(db database.DatabaseInterface, log *logger.Logger, identifier string) (*user.User, error) {
+func runUserDetails(
+	db database.DatabaseInterface,
+	log *logger.Logger,
+	identifier string,
+	findByID func(database.DatabaseInterface, int) (*user.User, error),
+	findByEmail func(database.DatabaseInterface, string) (*user.User, error),
+) (*user.User, error) {
 	log.Info("Attempting to find user...", logger.Fields{"identifier": identifier})
 
 	var foundUser *user.User
@@ -37,10 +43,10 @@ func runUserDetails(db database.DatabaseInterface, log *logger.Logger, identifie
 
 	if parseErr == nil && parsedID > 0 {
 		log.Info("Interpreted identifier as ID", logger.Fields{"id": parsedID})
-		foundUser, findErr = user.FindByID(db, parsedID)
+		foundUser, findErr = findByID(db, parsedID)
 	} else {
 		log.Info("Interpreted identifier as Email", logger.Fields{"email": identifier})
-		foundUser, findErr = user.FindByEmail(db, identifier)
+		foundUser, findErr = findByEmail(db, identifier)
 	}
 
 	if findErr != nil {
@@ -60,7 +66,29 @@ func runUserDetails(db database.DatabaseInterface, log *logger.Logger, identifie
 	return foundUser, nil
 }
 
-func runUserDetailsCmd(cmd *cobra.Command, args []string) {
+type dbConstructor func(cfg databaseConfig, log *logger.Logger) (database.DatabaseInterface, error)
+
+type userDetailsDeps struct {
+	dbNew       dbConstructor
+	findByID    func(database.DatabaseInterface, int) (*user.User, error)
+	findByEmail func(database.DatabaseInterface, string) (*user.User, error)
+}
+
+func defaultUserDetailsDeps() userDetailsDeps {
+	return userDetailsDeps{
+		dbNew: func(cfg databaseConfig, log *logger.Logger) (database.DatabaseInterface, error) {
+			return database.New(cfg, log)
+		},
+		findByID:    user.FindByID,
+		findByEmail: user.FindByEmail,
+	}
+}
+
+type databaseConfig = config.Database
+
+func runUserDetailsCmdWithDeps(cmd *cobra.Command, args []string, deps userDetailsDeps) {
+	_ = args
+
 	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
 
 	identifier := ""
@@ -76,38 +104,43 @@ func runUserDetailsCmd(cmd *cobra.Command, args []string) {
 	} else {
 		log.Info("No flags provided, prompting for input...", nil)
 		input, err := promptForString("Enter user's email or ID: ")
+
 		if err != nil {
 			log.Error("Failed to get input", logger.Fields{"error": err.Error()})
+
 			osExit(1)
 			return
 		}
+
 		if input == "" {
 			log.Error("Email or ID must be provided.", nil)
+
 			osExit(1)
 			return
 		}
+
 		identifier = input
 		log.Info("Using identifier from prompt", logger.Fields{"identifier": identifier})
 	}
 
 	dbConfig := getDatabaseConfigForCmd()
-	db, dbErr := database.New(dbConfig, log)
+	db, dbErr := deps.dbNew(dbConfig, log)
 
 	if dbErr != nil {
 		log.Error("Failed to connect to database", logger.Fields{"error": dbErr.Error()})
-		osExit(1)
 
+		osExit(1)
 		return
 	}
 
 	defer func() { _ = db.Close() }()
 
-	foundUser, runErr := runUserDetails(db, log, identifier)
+	foundUser, runErr := runUserDetails(db, log, identifier, deps.findByID, deps.findByEmail)
 
 	if runErr != nil {
 		fmt.Fprintf(os.Stderr, "Error finding user: %v\n", runErr)
-		osExit(1)
 
+		osExit(1)
 		return
 	}
 
@@ -119,4 +152,8 @@ func runUserDetailsCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("Created:   %s\n", foundUser.GetCreatedAt().Format("2006-01-02 15:04:05"))
 	fmt.Printf("Updated:   %s\n", foundUser.GetUpdatedAt().Format("2006-01-02 15:04:05"))
 	fmt.Println("--------------------")
+}
+
+func runUserDetailsCmd(cmd *cobra.Command, args []string) {
+	runUserDetailsCmdWithDeps(cmd, args, defaultUserDetailsDeps())
 }
