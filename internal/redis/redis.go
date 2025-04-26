@@ -21,7 +21,7 @@ type RedisInterface interface {
 }
 
 type Redis struct {
-	db     *redisClient.Client
+	db     redisClient.Cmdable
 	logger *logger.Logger
 }
 
@@ -63,7 +63,11 @@ func (d *Redis) Close() error {
 		return errNotInitialized
 	}
 
-	return d.db.Close()
+	if closer, ok := d.db.(interface{ Close() error }); ok {
+		return closer.Close()
+	}
+
+	return nil
 }
 
 func (d *Redis) Get(ctx context.Context, key string) (*redisClient.StringCmd, error) {
