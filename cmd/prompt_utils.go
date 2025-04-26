@@ -21,9 +21,11 @@ var promptForString = func(promptText string) (string, error) {
 	return strings.TrimSpace(input), nil
 }
 
+var readPassword = term.ReadPassword
+
 var promptForPassword = func(promptText string) (string, error) {
 	fmt.Print(promptText)
-	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
+	bytePassword, err := readPassword(int(os.Stdin.Fd()))
 
 	if err != nil {
 		return "", fmt.Errorf("failed to read password: %w", err)
