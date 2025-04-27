@@ -1,10 +1,32 @@
 {{- define "components/layout/messages" -}}
   {{- if .Messages -}}
     {{- range $msg := .Messages -}}
+      {{- $class := "" -}}
+      {{- $icon := "" -}}
+      {{- $iconClass := "size-5 flex-shrink-0" -}}
+
+      {{- if eq $msg.Type 0 -}}
+        {{- $class = "bg-red-100 text-red-800" -}}
+        {{- $icon = "error" -}}
+      {{- else if eq $msg.Type 1 -}}
+        {{- $class = "bg-amber-100 text-amber-800" -}}
+        {{- $icon = "warning-circle" -}}
+      {{- else if eq $msg.Type 2 -}}
+        {{- $class = "bg-blue-100 text-blue-800" -}}
+        {{- $icon = "info-circle" -}}
+      {{- else if eq $msg.Type 3 -}}
+        {{- $class = "bg-green-100 text-green-800" -}}
+        {{- $icon = "success-circle" -}}
+      {{- end -}}
+
+
       <div
-        class="rounded-md bg-red-50 p-4 text-sm font-medium text-red-800 shadow"
+        class="{{ $class }} flex items-center gap-2 rounded-md p-4 text-sm font-medium shadow"
       >
-        {{ $msg.Body }}
+        {{- template "components/atoms/icon" (dict "Icon" $icon "Classes" $iconClass) -}}
+
+
+        <span>{{ $msg.Body }}</span>
       </div>
     {{- end -}}
   {{- end -}}

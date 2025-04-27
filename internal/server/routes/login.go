@@ -127,7 +127,7 @@ func LoginPost(c *gin.Context) {
 		"userID": foundUser.GetID(),
 	})
 
-	v.SetFlash(message.Message{Body: "Successfully logged in!"})
+	v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: "Successfully logged in!"})
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
