@@ -9,7 +9,7 @@ import (
 //go:embed static/css/dist/* static/js/dist/* static/icons/* static/favicon.*
 var StaticFS embed.FS
 
-func GetStaticFS() (fs.FS, error) {
+var GetStaticFS = func() (fs.FS, error) {
 	return fs.Sub(StaticFS, "static")
 }
 

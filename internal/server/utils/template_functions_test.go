@@ -4,6 +4,10 @@ import (
 	"html/template"
 	"testing"
 
+	"fmt"
+	"io/fs"
+
+	"github.com/Dobefu/go-web-starter/internal/static"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -106,8 +110,41 @@ func TestReadFile(t *testing.T) {
 	}
 }
 
+func TestReadFile_GetStaticFSError(t *testing.T) {
+	orig := static.GetStaticFS
+
+	static.GetStaticFS = func() (fs.FS, error) {
+		return nil, fmt.Errorf("forced error")
+	}
+
+	defer func() { static.GetStaticFS = orig }()
+
+	readfile := TemplateFuncMap()["readfile"].(func(string) string)
+	assert.Equal(t, "", readfile("anyicon"))
+}
+
 func TestReplace(t *testing.T) {
 	replace := TemplateFuncMap()["replace"].(func(s string, old string, new string) string)
 
 	assert.Equal(t, "toast", replace("test", "e", "oa"))
+}
+
+func TestSlice(t *testing.T) {
+	slice := TemplateFuncMap()["slice"].(func(...any) []any)
+
+	tests := []struct {
+		name string
+		args []any
+		want []any
+	}{
+		{"empty slice", []any{}, []any{}},
+		{"single item", []any{42}, []any{42}},
+		{"multiple items", []any{"a", 2, true}, []any{"a", 2, true}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, slice(tt.args...))
+		})
+	}
 }
