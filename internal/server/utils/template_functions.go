@@ -69,5 +69,8 @@ func TemplateFuncMap() template.FuncMap {
 
 			return template.HTML(fmt.Sprintf("<pre>%s</pre>", string(json)))
 		},
+		"trimTrailingNewline": func(s string) string {
+			return strings.TrimRight(s, "\r\n")
+		},
 	}
 }

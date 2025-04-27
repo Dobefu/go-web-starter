@@ -24,6 +24,7 @@ func LoadTemplates(router *gin.Engine) error {
 
 func LoadTemplatesFromFS(router *gin.Engine, fsys fs.FS) error {
 	templateFiles, err := findTemplateFiles(fsys)
+
 	if err != nil {
 		return err
 	}

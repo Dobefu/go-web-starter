@@ -5,6 +5,7 @@
     {{- if .Classes -}}
       {{- $iconContent = replace $iconContent "<svg" (printf "<svg class=\"%s\"" .Classes) -}}
     {{- end -}}
-    {{- $iconContent|raw -}}
+
+    {{- trimTrailingNewline $iconContent|raw -}}
   {{- end -}}
 {{- end -}}
