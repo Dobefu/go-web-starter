@@ -194,6 +194,8 @@ func runRedisMethodTests(t *testing.T, cases []redisTestCase) {
 }
 
 func TestRedis_Get(t *testing.T) {
+	t.Parallel()
+
 	key := "test-key"
 	runRedisMethodTests(t, []redisTestCase{
 		{
@@ -236,6 +238,8 @@ func TestRedis_Get(t *testing.T) {
 }
 
 func TestRedis_Set(t *testing.T) {
+	t.Parallel()
+
 	key := "test-key"
 	val := "val"
 
@@ -270,6 +274,8 @@ func TestRedis_Set(t *testing.T) {
 }
 
 func TestRedis_GetRange(t *testing.T) {
+	t.Parallel()
+
 	key := "test-key"
 	start, end := int64(0), int64(10)
 
@@ -313,6 +319,8 @@ func TestRedis_GetRange(t *testing.T) {
 }
 
 func TestRedis_SetRange(t *testing.T) {
+	t.Parallel()
+
 	key := "test-key"
 
 	runRedisMethodTests(t, []redisTestCase{
@@ -355,6 +363,8 @@ func TestRedis_SetRange(t *testing.T) {
 }
 
 func TestRedis_FlushDB(t *testing.T) {
+	t.Parallel()
+
 	runRedisMethodTests(t, []redisTestCase{
 		{
 			name:      "nil db",
@@ -386,6 +396,7 @@ func TestRedis_FlushDB(t *testing.T) {
 }
 
 func TestRedis_isClientClosed(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name      string
 		redis     *Redis
@@ -414,6 +425,8 @@ func TestRedis_isClientClosed(t *testing.T) {
 }
 
 func TestRedis_New(t *testing.T) {
+	t.Parallel()
+
 	log := logger.New(logger.DebugLevel, testingWriter{t})
 
 	cfg := config.Redis{
