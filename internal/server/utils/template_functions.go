@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -58,6 +59,15 @@ func TemplateFuncMap() template.FuncMap {
 		},
 		"slice": func(items ...any) []any {
 			return items
+		},
+		"dump": func(v any) template.HTML {
+			json, err := json.MarshalIndent(v, "", "  ")
+
+			if err != nil {
+				return template.HTML(fmt.Sprintf("<pre>%#v</pre>", v))
+			}
+
+			return template.HTML(fmt.Sprintf("<pre>%s</pre>", string(json)))
 		},
 	}
 }
