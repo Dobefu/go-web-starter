@@ -3,16 +3,62 @@ package routes
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/templates"
+	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
+
+func getCurrentUser(c *gin.Context) *user.User {
+	session := sessions.Default(c)
+	userID := session.Get("userID")
+
+	if userID == nil {
+		return nil
+	}
+
+	dbVal, exists := c.Get("db")
+
+	if !exists {
+		return nil
+	}
+
+	db, ok := dbVal.(database.DatabaseInterface)
+
+	if !ok {
+		return nil
+	}
+
+	id, ok := userID.(int)
+
+	if !ok {
+		return nil
+	}
+
+	currentUser, err := user.FindByID(db, id)
+
+	if err != nil {
+		log := logger.New(config.GetLogLevel(), os.Stdout)
+
+		log.Error("getCurrentUser: failed to load user", logger.Fields{
+			"id":    id,
+			"error": err.Error(),
+		})
+		return nil
+	}
+
+	return currentUser
+}
 
 func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 	v := validator.New()
@@ -25,6 +71,8 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		canonical = strings.TrimRight(canonical, "/")
 	}
 
+	currentUser := getCurrentUser(c)
+
 	data := struct {
 		RouteData
 		SiteName  string
@@ -33,6 +81,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		BuildHash string
 		Canonical string
 		Messages  []message.Message
+		User      *user.User
 	}{
 		RouteData: routeData,
 		SiteName:  viper.GetString("site.name"),
@@ -41,6 +90,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		BuildHash: config.BuildHash,
 		Canonical: canonical,
 		Messages:  v.GetMessages(),
+		User:      currentUser,
 	}
 
 	if gin.Mode() == gin.DebugMode {
