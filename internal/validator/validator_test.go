@@ -359,3 +359,29 @@ func TestSetFlashEdgeCases(t *testing.T) {
 	c.Set("AddFlash", "not a function")
 	v.SetFlash(message.Message{Body: "test message"})
 }
+
+type panicSession struct{}
+
+func (p *panicSession) Flashes(...string) []any            { panic("forced panic for test") }
+func (p *panicSession) Clear()                             {}
+func (p *panicSession) Save() error                        { return nil }
+func (p *panicSession) ID() string                         { return "" }
+func (p *panicSession) Get(key any) any                    { return nil }
+func (p *panicSession) Set(key, val any)                   {}
+func (p *panicSession) Delete(key any)                     {}
+func (p *panicSession) AddFlash(value any, vars ...string) {}
+func (p *panicSession) Options(options sessions.Options)   {}
+
+func TestGetMessages_RecoversFromPanic(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Set("github.com/gin-contrib/sessions", &panicSession{})
+
+	v := New()
+	v.SetContext(c)
+
+	assert.NotPanics(t, func() {
+		msgs := v.GetMessages()
+		assert.Empty(t, msgs)
+	})
+}
