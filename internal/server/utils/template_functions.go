@@ -56,5 +56,8 @@ func TemplateFuncMap() template.FuncMap {
 		"replace": func(s string, old string, new string) string {
 			return strings.ReplaceAll(s, old, new)
 		},
+		"slice": func(items ...any) []any {
+			return items
+		},
 	}
 }
