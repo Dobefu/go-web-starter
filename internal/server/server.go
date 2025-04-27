@@ -168,16 +168,11 @@ func defaultNew(port int) (ServerInterface, error) {
 	router.Use(middleware.CSRF())
 	router.Use(middleware.Flash())
 
-	if srv.redis != nil {
-		router.Use(middleware.Redis(srv.redis))
-		log.Trace("Redis middleware initialized", nil)
-	}
-
-	if srv.redis != nil {
+	if redisConfig.Enable && srv.redis != nil {
 		limiter := middleware.NewRateLimiterWithRedis(srv.redis, rateLimitRequests, rateLimitWindow)
 		router.Use(limiter.Middleware())
 	} else {
-		router.Use(middleware.RateLimit(rateLimitRequests, rateLimitWindow))
+		router.Use(middleware.RateLimit(rateLimitRequests, rateLimitWindow, redisConfig.Enable))
 	}
 
 	router.Use(middleware.CorsHeaders())

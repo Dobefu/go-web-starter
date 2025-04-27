@@ -284,8 +284,8 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	}
 }
 
-func RateLimit(capacity int, rate time.Duration) gin.HandlerFunc {
-	if !config.DefaultConfig.Redis.Enable {
+func RateLimit(capacity int, rate time.Duration, isRedisEnabled bool) gin.HandlerFunc {
+	if !isRedisEnabled {
 		return func(c *gin.Context) {
 			c.Next()
 		}
