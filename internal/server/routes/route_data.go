@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +20,7 @@ type RouteData struct {
 	Data        map[string]any
 	FormData    FormData
 	CSRFToken   string
+	User        *user.User
 }
 
 func GenericErrorData(c *gin.Context) RouteData {
