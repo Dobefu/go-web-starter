@@ -51,6 +51,7 @@ func runClearCacheCmd(cmd *cobra.Command, args []string) {
 		log.Error("Failed to initialize Redis", logger.Fields{
 			"error": err.Error(),
 		})
+
 		return
 	}
 

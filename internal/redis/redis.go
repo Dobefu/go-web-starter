@@ -244,3 +244,10 @@ func (d *Redis) SetWithTTL(ctx context.Context, key string, value any) (*redisCl
 
 	return cmd, cmd.Err()
 }
+
+func NewWithMockDB(db redisClient.Cmdable, log *logger.Logger) *Redis {
+	return &Redis{
+		db:     db,
+		logger: log,
+	}
+}
