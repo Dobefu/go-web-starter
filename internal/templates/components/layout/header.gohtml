@@ -1,3 +1,12 @@
+{{- define "components/layout/header/_menuLinks" -}}
+  {{- range . -}}
+    <a class="flex items-center gap-2" href="{{ .Href }}">
+      {{- template "components/atoms/icon" dict "Icon" .Icon "Classes" "size-5" -}}
+      {{- .Label -}}
+    </a>
+  {{- end -}}
+{{- end -}}
+
 {{- define "components/layout/header" -}}
   <header class="container mx-auto p-4">
     <nav class="flex items-center justify-between gap-4" role="navigation">
@@ -28,15 +37,21 @@
             </button>
           </div>
 
-          <a class="flex items-center gap-2" href="/login">
-            {{- template "components/atoms/icon" dict "Icon" "login" "Classes" "size-5" -}}
-            Log In
-          </a>
+          {{- if .User -}}
+            {{- $menu := slice
+              (dict "Label" "My Account" "Icon" "account" "Href" "/account")
+              (dict "Label" "Log Out" "Icon" "logout" "Href" "/logout")
+            -}}
 
-          <a class="flex items-center gap-2" href="/register">
-            {{- template "components/atoms/icon" dict "Icon" "register" "Classes" "size-5" -}}
-            Register
-          </a>
+            {{- template "components/layout/header/_menuLinks" $menu -}}
+          {{- else -}}
+            {{- $menu := slice
+              (dict "Label" "Log In" "Icon" "login" "Href" "/login")
+              (dict "Label" "Register" "Icon" "register" "Href" "/register")
+            -}}
+
+            {{- template "components/layout/header/_menuLinks" $menu -}}
+          {{- end -}}
         </div>
       </div>
 
