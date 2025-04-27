@@ -8,6 +8,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := New[string]()
 
 	assert.NotNil(t, c)
@@ -15,6 +17,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetSet(t *testing.T) {
+	t.Parallel()
+
 	c := New[string]()
 
 	c.Set("key1", "value1", time.Hour)
@@ -28,6 +32,8 @@ func TestGetSet(t *testing.T) {
 }
 
 func TestExpiration(t *testing.T) {
+	t.Parallel()
+
 	c := New[string]()
 
 	c.Set("key1", "value1", (100 * time.Millisecond))
@@ -44,6 +50,8 @@ func TestExpiration(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
+	t.Parallel()
+
 	c := New[string]()
 
 	c.Set("key1", "value1", time.Hour)
@@ -58,6 +66,8 @@ func TestClear(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	c := New[string]()
 
 	c.Set("key1", "value1", time.Hour)
