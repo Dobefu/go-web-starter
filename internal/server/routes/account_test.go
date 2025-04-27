@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLogout(t *testing.T) {
+func TestAccount(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
@@ -24,11 +24,11 @@ func TestLogout(t *testing.T) {
 	router.SetFuncMap(server_utils.TemplateFuncMap())
 	err := templates.LoadTemplates(router)
 	assert.NoError(t, err)
-	router.GET("/", Logout)
+	router.GET("/", Account)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusSeeOther, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
