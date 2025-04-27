@@ -1,38 +1,38 @@
 {{- define "pages/account" -}}
   {{- template "layouts/default/head" . -}}
 
-
-  <div class="prose prose-lg flex flex-col gap-8">
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-      <section class="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm">
-        {{- template "components/atoms/heading" dict "Level" 2 "Text" "Account Info" -}}
+  {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
 
 
-        <div class="flex flex-col gap-2">
-          <div>
-            <span class="font-semibold">Username:</span>
-            <span>{{ .User.GetUsername }}</span>
-          </div>
+  <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+    <section class="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm">
+      {{- template "components/atoms/heading" dict "Level" 2 "Text" "Account Info" -}}
 
-          <div>
-            <span class="font-semibold">Email:</span>
-            <span>{{ .User.GetEmail }}</span>
-          </div>
+
+      <div class="flex flex-col gap-2">
+        <div>
+          <span class="font-semibold">Username:</span>
+          <span>{{ .User.GetUsername }}</span>
         </div>
-      </section>
 
-      <section class="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm">
-        {{- template "components/atoms/heading" dict "Level" 2 "Text" "Account Details" -}}
-
-
-        <div class="flex flex-col gap-2">
-          <div>
-            <span class="font-semibold">Member since:</span>
-            <span>{{ .User.GetCreatedAt.Format "Jan 2, 2006" }}</span>
-          </div>
+        <div>
+          <span class="font-semibold">Email:</span>
+          <span>{{ .User.GetEmail }}</span>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm">
+      {{- template "components/atoms/heading" dict "Level" 2 "Text" "Account Details" -}}
+
+
+      <div class="flex flex-col gap-2">
+        <div>
+          <span class="font-semibold">Member since:</span>
+          <span>{{ .User.GetCreatedAt.Format "Jan 2, 2006" }}</span>
+        </div>
+      </div>
+    </section>
   </div>
 
   {{- template "layouts/default/foot" . -}}

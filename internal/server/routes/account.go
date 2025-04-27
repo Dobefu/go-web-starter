@@ -7,7 +7,7 @@ import (
 func Account(c *gin.Context) {
 	data := RouteData{
 		Template:    "pages/account",
-		Title:       "Account",
+		Title:       "My Account",
 		Description: "View and manage your account details.",
 		HttpStatus:  200,
 	}
