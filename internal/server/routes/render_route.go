@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var userFindByID = user.FindByID
+
 func getCurrentUser(c *gin.Context) *user.User {
 	session := sessions.Default(c)
 	userID := session.Get("userID")
@@ -45,7 +47,7 @@ func getCurrentUser(c *gin.Context) *user.User {
 		return nil
 	}
 
-	currentUser, err := user.FindByID(db, id)
+	currentUser, err := userFindByID(db, id)
 
 	if err != nil {
 		log := logger.New(config.GetLogLevel(), os.Stdout)
