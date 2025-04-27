@@ -192,3 +192,29 @@ func TestDump(t *testing.T) {
 		})
 	}
 }
+
+func TestTrimTrailingNewline(t *testing.T) {
+	trimTrailingNewline := TemplateFuncMap()["trimTrailingNewline"].(func(string) string)
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"no newline", "foo", "foo"},
+		{"single newline", "foo\n", "foo"},
+		{"single carriage return", "foo\r", "foo"},
+		{"windows newline", "foo\r\n", "foo"},
+		{"multiple newlines", "foo\n\n", "foo"},
+		{"multiple carriage returns", "foo\r\r", "foo"},
+		{"mixed newlines", "foo\r\n\n", "foo"},
+		{"empty string", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := trimTrailingNewline(tt.in)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
