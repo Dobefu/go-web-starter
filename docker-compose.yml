@@ -19,13 +19,13 @@ services:
     image: eqalpha/keydb:latest
     container_name: cache
     restart: on-failure
-    command: [ "keydb-server", "--save", "", "--appendonly", "no" ]
+    command: ['keydb-server', '--save', '', '--appendonly', 'no']
     volumes:
       - cache:/data
     ports:
       - '9736:6379'
     healthcheck:
-      test: [ "CMD", "keydb-cli", "ping" ]
+      test: ['CMD', 'keydb-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 3
