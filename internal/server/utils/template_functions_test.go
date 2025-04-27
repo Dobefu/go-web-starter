@@ -148,3 +148,47 @@ func TestSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestDump(t *testing.T) {
+	dump := TemplateFuncMap()["dump"].(func(any) template.HTML)
+
+	tests := []struct {
+		name     string
+		input    any
+		wantSubs []string
+		wantPre  bool
+	}{
+		{
+			name:     "pretty print JSON for map",
+			input:    map[string]any{"foo": "bar", "num": 42},
+			wantSubs: []string{`"foo": "bar"`, `"num": 42`},
+			wantPre:  true,
+		},
+		{
+			name:     "pretty print JSON for slice",
+			input:    []int{1, 2, 3},
+			wantSubs: []string{"1", "2", "3"},
+			wantPre:  true,
+		},
+		{
+			name:     "fallback for non-JSON-marshalable type",
+			input:    make(chan int),
+			wantSubs: []string{"chan int"},
+			wantPre:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := string(dump(tt.input))
+
+			for _, sub := range tt.wantSubs {
+				assert.Contains(t, output, sub)
+			}
+
+			if tt.wantPre {
+				assert.True(t, output[0:5] == "<pre>" && output[len(output)-6:] == "</pre>")
+			}
+		})
+	}
+}
