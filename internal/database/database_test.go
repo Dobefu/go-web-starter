@@ -112,6 +112,8 @@ func TestNewDatabase(t *testing.T) {
 }
 
 func TestDatabaseNotInitialized(t *testing.T) {
+	t.Parallel()
+
 	db := &Database{
 		db: nil,
 	}
@@ -187,6 +189,8 @@ func setupTestDB(t *testing.T) (*Database, sqlmock.Sqlmock) {
 }
 
 func TestDatabasePing(t *testing.T) {
+	t.Parallel()
+
 	database, mock := setupTestDB(t)
 	defer func() { _ = database.Close() }()
 
@@ -203,6 +207,8 @@ func TestDatabasePing(t *testing.T) {
 }
 
 func TestDatabaseExec(t *testing.T) {
+	t.Parallel()
+
 	database, mock := setupTestDB(t)
 	defer func() { _ = database.Close() }()
 
@@ -221,6 +227,8 @@ func TestDatabaseExec(t *testing.T) {
 }
 
 func TestBasicDatabaseOperations(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 
 	if err != nil {
@@ -288,6 +296,8 @@ func TestBasicDatabaseOperations(t *testing.T) {
 }
 
 func TestDatabaseLogging(t *testing.T) {
+	t.Parallel()
+
 	mockDB := &mockDB{
 		stats: sql.DBStats{
 			MaxIdleClosed:      10,
@@ -313,6 +323,8 @@ func TestDatabaseLogging(t *testing.T) {
 }
 
 func TestDatabaseConnectionPool(t *testing.T) {
+	t.Parallel()
+
 	mockDB := &mockDB{
 		stats: sql.DBStats{
 			MaxIdleClosed:      10,
@@ -334,6 +346,8 @@ func TestDatabaseConnectionPool(t *testing.T) {
 }
 
 func TestQuerySuccess(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 
 	if err != nil {
@@ -358,6 +372,8 @@ func TestQuerySuccess(t *testing.T) {
 }
 
 func TestQueryFailure(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 
 	if err != nil {
