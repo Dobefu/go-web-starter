@@ -125,3 +125,17 @@ func TestUnknownLevel(t *testing.T) {
 
 	assert.Contains(t, output, color.New(color.FgWhite).Sprint("UNKNOWN"))
 }
+
+func TestLoggerWithNilOutput_DoesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logger := New(DebugLevel, nil)
+		logger.Info("This should not panic", Fields{"foo": "bar"})
+	})
+}
+
+func TestLoggerLogWithNilOutputField_DoesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logger := &Logger{level: DebugLevel, output: nil}
+		logger.Info("This should not panic", Fields{"should": "not appear"})
+	})
+}
