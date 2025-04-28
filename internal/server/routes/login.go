@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
-	"github.com/Dobefu/go-web-starter/internal/database"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-contrib/sessions"
@@ -26,10 +26,12 @@ func Login(c *gin.Context) {
 	csrfToken := middleware.GetCSRFToken(c)
 
 	data := RouteData{
-		Template:    "pages/login",
-		HttpStatus:  http.StatusOK,
+		Template:   "pages/login",
+		HttpStatus: http.StatusOK,
+
 		Title:       "Log In",
 		Description: "Sign in to your account",
+
 		FormData: FormData{
 			Values: v.GetFormData(),
 			Errors: v.GetSessionErrors(),
@@ -60,22 +62,13 @@ func LoginPost(c *gin.Context) {
 	v.Required("password", password)
 
 	if v.HasErrors() {
-		redirectWithError(c, v, email, "Please correct the errors below")
+		redirectToLoginWithError(c, v, email, "Please correct the errors below")
 		return
 	}
 
-	dbVal, exists := c.Get("db")
+	db, err := route_utils.GetDbFromContext(c)
 
-	if !exists {
-		log.Error("Failed to get database connection from context", nil)
-		RenderRouteHTML(c, GenericErrorData(c))
-
-		return
-	}
-
-	db, ok := dbVal.(database.DatabaseInterface)
-
-	if !ok {
+	if err != nil {
 		log.Error("Failed to get database connection from context", nil)
 		RenderRouteHTML(c, GenericErrorData(c))
 
@@ -87,7 +80,7 @@ func LoginPost(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, user.ErrInvalidCredentials) {
 			log.Warn("Login failed: invalid credentials (email not found)", map[string]any{"email": email})
-			redirectWithError(c, v, email, user.ErrInvalidCredentials.Error())
+			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
 		} else {
 			log.Error("Database error during login", map[string]any{"email": email, "error": err.Error()})
 			RenderRouteHTML(c, GenericErrorData(c))
@@ -101,7 +94,7 @@ func LoginPost(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, user.ErrInvalidCredentials) {
 			log.Warn("Login failed: invalid credentials (password mismatch)", map[string]any{"email": email})
-			redirectWithError(c, v, email, user.ErrInvalidCredentials.Error())
+			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
 		} else {
 			log.Error("Password check error during login", map[string]any{"email": email, "error": err.Error()})
 			RenderRouteHTML(c, GenericErrorData(c))
@@ -131,7 +124,7 @@ func LoginPost(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
-func redirectWithError(c *gin.Context, v *validator.Validator, email string, flashMsg string) {
+func redirectToLoginWithError(c *gin.Context, v *validator.Validator, email string, flashMsg string) {
 	v.SetFormData(map[string]string{
 		"email": email,
 	})
