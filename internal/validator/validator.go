@@ -20,6 +20,7 @@ const (
 	msgFormProcessing = "Failed to process form data"
 	msgMinLength      = "This field must be at least %d characters long"
 	msgMaxLength      = "This field must be no more than %d characters long"
+	msgPasswordsMatch = "The passwords do not match"
 )
 
 type Validator struct {
@@ -139,6 +140,10 @@ func (v *Validator) MinLength(field, value string, min int) {
 
 func (v *Validator) MaxLength(field, value string, max int) {
 	v.CheckField(len(strings.TrimSpace(value)) <= max, field, fmt.Sprintf(msgMaxLength, max))
+}
+
+func (v *Validator) PasswordsMatch(field, password1 string, password2 string) {
+	v.CheckField(password1 == password2, field, msgPasswordsMatch)
 }
 
 func (v *Validator) ValidateForm(r *http.Request) error {
