@@ -15,12 +15,48 @@
 
     <div class="flex flex-col gap-2">
       <label class="required" for="email">Email address</label>
-      <input autofocus id="email" name="email" required type="email" />
+      <input
+        autofocus
+        id="email"
+        name="email"
+        required
+        type="email"
+        value="{{ .FormData.Values.email }}"
+      />
+
+      {{- if .FormData.Errors.email -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.email 0 }}
+        </div>
+      {{- end -}}
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="required" for="username">Username</label>
+      <input
+        id="username"
+        name="username"
+        required
+        type="text"
+        value="{{ .FormData.Values.username }}"
+      />
+
+      {{- if .FormData.Errors.username -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.username 0 }}
+        </div>
+      {{- end -}}
     </div>
 
     <div class="flex flex-col gap-2">
       <label class="required" for="password">Password</label>
       <input id="password" name="password" required type="password" />
+
+      {{- if .FormData.Errors.password -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.password 0 }}
+        </div>
+      {{- end -}}
     </div>
 
     <div class="flex flex-col gap-2">
@@ -31,6 +67,12 @@
         required
         type="password"
       />
+
+      {{- if .FormData.Errors.passwordConfirm -}}
+        <div class="text-sm text-red-500">
+          {{ index .FormData.Errors.passwordConfirm 0 }}
+        </div>
+      {{- end -}}
     </div>
 
     <button class="btn me-auto flex items-center gap-2" type="submit">
