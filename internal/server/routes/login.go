@@ -12,12 +12,8 @@ import (
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
-
-var findByEmail = user.FindByEmail
-var getSession = sessions.Default
 
 func Login(c *gin.Context) {
 	v := validator.New()
