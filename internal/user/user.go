@@ -15,8 +15,10 @@ var (
 )
 
 const (
-	insertUserQuery      = `INSERT INTO users (username, email, password, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at, updated_at`
-	findUserByEmailQuery = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE email = $1`
+	insertUserQuery         = `INSERT INTO users (username, email, password, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at, updated_at`
+	findUserByEmailQuery    = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE email = $1`
+	findUserByUsernameQuery = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE username = $1`
+	findUserByIDQuery       = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`
 )
 
 type User struct {
@@ -55,12 +57,15 @@ func (user *User) GetUpdatedAt() (updatedAt time.Time) {
 
 func (user *User) CheckPassword(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(user.password), []byte(password))
+
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return ErrInvalidCredentials
 		}
+
 		return fmt.Errorf("error comparing password hash: %w", err)
 	}
+
 	return nil
 }
 
@@ -100,7 +105,33 @@ func FindByEmail(db database.DatabaseInterface, email string) (*User, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrInvalidCredentials
 		}
+
 		return nil, fmt.Errorf("error finding user by email: %w", err)
+	}
+
+	return user, nil
+}
+
+func FindByUsername(db database.DatabaseInterface, username string) (*User, error) {
+	user := &User{}
+	row := db.QueryRow(findUserByUsernameQuery, username)
+
+	err := row.Scan(
+		&user.id,
+		&user.username,
+		&user.email,
+		&user.password,
+		&user.status,
+		&user.createdAt,
+		&user.updatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInvalidCredentials
+		}
+
+		return nil, fmt.Errorf("error finding user by username: %w", err)
 	}
 
 	return user, nil
@@ -108,7 +139,6 @@ func FindByEmail(db database.DatabaseInterface, email string) (*User, error) {
 
 func FindByID(db database.DatabaseInterface, id int) (*User, error) {
 	user := &User{}
-	findUserByIDQuery := `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`
 	row := db.QueryRow(findUserByIDQuery, id)
 
 	err := row.Scan(
