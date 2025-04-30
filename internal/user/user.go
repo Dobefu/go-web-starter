@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrNotActive          = errors.New("the user is not active")
 )
 
 const (

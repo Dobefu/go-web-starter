@@ -75,6 +75,8 @@ func LoginPost(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, user.ErrInvalidCredentials) {
+			v.AddFieldError("email", user.ErrInvalidCredentials.Error())
+
 			log.Warn("Login failed: invalid credentials (email not found)", map[string]any{"email": email})
 			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
 		} else {
@@ -89,6 +91,8 @@ func LoginPost(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, user.ErrInvalidCredentials) {
+			v.AddFieldError("email", user.ErrInvalidCredentials.Error())
+
 			log.Warn("Login failed: invalid credentials (password mismatch)", map[string]any{"email": email})
 			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
 		} else {
@@ -96,6 +100,12 @@ func LoginPost(c *gin.Context) {
 			RenderRouteHTML(c, GenericErrorData(c))
 		}
 
+		return
+	}
+
+	if !foundUser.GetStatus() {
+		log.Warn("An inactive user tried to log in", logger.Fields{"mail": email})
+		redirectToLoginWithError(c, v, email, user.ErrNotActive.Error())
 		return
 	}
 
@@ -124,11 +134,6 @@ func redirectToLoginWithError(c *gin.Context, v *validator.Validator, email stri
 	v.SetFormData(map[string]string{
 		"email": email,
 	})
-
-	if !v.HasErrors() {
-		v.AddFieldError("email", user.ErrInvalidCredentials.Error())
-		v.AddFieldError("password", " ")
-	}
 
 	v.SetErrors()
 	v.SetFlash(message.Message{Body: flashMsg})
