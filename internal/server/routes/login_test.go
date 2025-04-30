@@ -135,7 +135,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "CheckPassword returns ErrInvalidCredentials",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"badpw"}},
 			setDBInContext: true,
-			foundUser:      &mockUser{},
+			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/login",
 		},
@@ -143,7 +143,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "CheckPassword returns other error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
 			setDBInContext: true,
-			foundUser:      &mockUser{},
+			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusInternalServerError,
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.Contains(t, w.Body.String(), "Server Error")
@@ -153,7 +153,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "session save error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
 			setDBInContext: true,
-			foundUser:      &mockUser{},
+			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusInternalServerError,
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.Contains(t, w.Body.String(), "Server Error")
@@ -163,7 +163,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "success",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
 			setDBInContext: true,
-			foundUser:      &mockUser{},
+			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/",
 		},
@@ -171,7 +171,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "ValidateForm error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
 			setDBInContext: true,
-			foundUser:      &mockUser{},
+			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			findUserErr:    nil,
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/login",
@@ -199,6 +199,7 @@ func TestLoginPost(t *testing.T) {
 				if tc.foundUser != nil {
 					return &tc.foundUser.User, tc.findUserErr
 				}
+
 				return nil, tc.findUserErr
 			}
 
