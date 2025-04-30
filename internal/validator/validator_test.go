@@ -156,7 +156,7 @@ func TestMinLength(t *testing.T) {
 	v.MinLength("field1", "abc", 4)
 	assert.False(t, v.isValid)
 	assert.Len(t, v.fieldErrors["field1"], 1)
-	assert.Equal(t, "This field must be at least 4 characters long", v.fieldErrors["field1"][0])
+	assert.Equal(t, fmt.Sprintf(msgMinLength, 4), v.fieldErrors["field1"][0])
 
 	v = New()
 	v.MinLength("field1", "abcd", 4)
@@ -169,10 +169,23 @@ func TestMaxLength(t *testing.T) {
 	v.MaxLength("field1", "abcde", 4)
 	assert.False(t, v.isValid)
 	assert.Len(t, v.fieldErrors["field1"], 1)
-	assert.Equal(t, "This field must be no more than 4 characters long", v.fieldErrors["field1"][0])
+	assert.Equal(t, fmt.Sprintf(msgMaxLength, 4), v.fieldErrors["field1"][0])
 
 	v = New()
 	v.MaxLength("field1", "abcd", 4)
+	assert.True(t, v.isValid)
+	assert.Empty(t, v.fieldErrors)
+}
+
+func TestPasswordsMatch(t *testing.T) {
+	v := New()
+	v.PasswordsMatch("field1", "pass", "bogus")
+	assert.False(t, v.isValid)
+	assert.Len(t, v.fieldErrors["field1"], 1)
+	assert.Equal(t, msgPasswordsMatch, v.fieldErrors["field1"][0])
+
+	v = New()
+	v.PasswordsMatch("field1", "pass", "pass")
 	assert.True(t, v.isValid)
 	assert.Empty(t, v.fieldErrors)
 }
