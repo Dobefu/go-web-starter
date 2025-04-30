@@ -90,6 +90,7 @@ func TestLoginPost(t *testing.T) {
 	type testCase struct {
 		name           string
 		setDBInContext bool
+		hashPassword   bool
 		foundUser      *mockUser
 		findUserErr    error
 		form           url.Values
@@ -134,6 +135,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "CheckPassword returns ErrInvalidCredentials",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"badpw"}},
+			hashPassword:   false,
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
@@ -142,6 +144,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "CheckPassword returns other error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   false,
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusInternalServerError,
@@ -152,6 +155,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "session save error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   true,
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusInternalServerError,
@@ -162,6 +166,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "success",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   true,
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
@@ -170,6 +175,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "inactive",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   true,
 			setDBInContext: true,
 			foundUser:      &mockUser{},
 			expectStatus:   http.StatusSeeOther,
@@ -178,6 +184,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "ValidateForm error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   false,
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			findUserErr:    nil,
@@ -188,6 +195,7 @@ func TestLoginPost(t *testing.T) {
 		{
 			name:           "db in context but wrong type",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			hashPassword:   false,
 			setDBInContext: false,
 			expectStatus:   http.StatusInternalServerError,
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -243,7 +251,7 @@ func TestLoginPost(t *testing.T) {
 				})
 			}
 
-			if tc.name == "success" || tc.name == "inactive" {
+			if tc.hashPassword {
 				hash, _ := bcrypt.GenerateFromPassword([]byte("pw"), bcrypt.DefaultCost)
 				if tc.foundUser != nil {
 					setUserPassword(&tc.foundUser.User, string(hash))
@@ -277,6 +285,10 @@ func TestLoginPost(t *testing.T) {
 type mockSession struct {
 	sessions.Session
 	saveErr error
+}
+
+func (m *mockSession) Set(key interface{}, val interface{}) {
+	// Dummy implementation.
 }
 
 func (m *mockSession) Save() error {
