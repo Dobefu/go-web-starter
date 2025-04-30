@@ -90,7 +90,16 @@ func RegisterPost(c *gin.Context) {
 		return
 	}
 
-	usr := user.NewUser(username, email, password, false)
+	hashedPassword, err := user.HashPassword(password)
+
+	if err != nil {
+		log.Error("Failed to save the user", logger.Fields{"err": err.Error()})
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	usr := user.NewUser(username, email, hashedPassword, false)
 	err = usr.Save(db)
 
 	if err != nil {
@@ -100,7 +109,11 @@ func RegisterPost(c *gin.Context) {
 		return
 	}
 
-	v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: "Your account has been created!"})
+	v.SetFlash(message.Message{
+		Type: message.MessageTypeSuccess,
+		Body: "Your account has been created!",
+	})
+
 	c.Redirect(http.StatusSeeOther, "/login")
 }
 
