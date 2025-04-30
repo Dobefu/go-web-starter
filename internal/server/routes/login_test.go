@@ -168,6 +168,14 @@ func TestLoginPost(t *testing.T) {
 			expectLocation: "/",
 		},
 		{
+			name:           "inactive",
+			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
+			setDBInContext: true,
+			foundUser:      &mockUser{},
+			expectStatus:   http.StatusSeeOther,
+			expectLocation: "/login",
+		},
+		{
 			name:           "ValidateForm error",
 			form:           url.Values{"email": {"user@example.com"}, "password": {"pw"}},
 			setDBInContext: true,
@@ -235,7 +243,7 @@ func TestLoginPost(t *testing.T) {
 				})
 			}
 
-			if tc.name == "success" {
+			if tc.name == "success" || tc.name == "inactive" {
 				hash, _ := bcrypt.GenerateFromPassword([]byte("pw"), bcrypt.DefaultCost)
 				if tc.foundUser != nil {
 					setUserPassword(&tc.foundUser.User, string(hash))
