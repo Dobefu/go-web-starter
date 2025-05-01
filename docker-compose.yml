@@ -19,19 +19,38 @@ services:
     image: eqalpha/keydb:latest
     container_name: cache
     restart: on-failure
-    command: ['keydb-server', '--save', '', '--appendonly', 'no']
+    command:
+      - 'keydb-server'
+      - '--save'
+      - ''
+      - '--appendonly'
+      - 'no'
     volumes:
       - cache:/data
     ports:
       - '9736:6379'
     healthcheck:
-      test: ['CMD', 'keydb-cli', 'ping']
+      test:
+        - 'CMD'
+        - 'keydb-cli'
+        - 'ping'
       interval: 10s
       timeout: 3s
       retries: 3
     # --- Linux-only options below ---
     # For lowest latency on Linux, uncomment the next line:
     # network_mode: host
+
+  mail:
+    image: axllent/mailpit
+    container_name: mail
+    restart: on-failure
+    ports:
+      - '5208:8025'
+      - '5201:1025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
 volumes:
   postgres:
