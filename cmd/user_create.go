@@ -13,18 +13,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-var createUserCmd = &cobra.Command{
+var userCreateCmd = &cobra.Command{
 	Use:   "user:create",
 	Short: "Create a new user in the database",
-	Run:   runCreateUserCmd,
+	Run:   runUserCreateCmd,
 }
 
 func init() {
-	rootCmd.AddCommand(createUserCmd)
+	rootCmd.AddCommand(userCreateCmd)
 
-	createUserCmd.Flags().StringP("username", "u", "", "Username for the new user")
-	createUserCmd.Flags().StringP("email", "e", "", "Email for the new user")
-	createUserCmd.Flags().StringP("password", "p", "", "Password for the new user")
+	userCreateCmd.Flags().StringP("username", "u", "", "Username for the new user")
+	userCreateCmd.Flags().StringP("email", "e", "", "Email for the new user")
+	userCreateCmd.Flags().StringP("password", "p", "", "Password for the new user")
 }
 
 func getUserDetails(cmd *cobra.Command) (username, email, password string, err error) {
@@ -71,7 +71,7 @@ func getUserDetails(cmd *cobra.Command) (username, email, password string, err e
 	return username, email, password, nil
 }
 
-func runCreateUser(repo user.UserRepository, log *logger.Logger, username, email, password string) (*user.User, error) {
+func runUserCreate(repo user.UserRepository, log *logger.Logger, username, email, password string) (*user.User, error) {
 	log.Info("Attempting user creation in core logic...", logger.Fields{"email": email, "username": username})
 
 	createdUser, createErr := user.CreateWithRepo(repo, username, email, password)
@@ -106,12 +106,12 @@ func defaultUserCreateDeps() userCreateDeps {
 	return userCreateDeps{
 		getUserDetails: getUserDetails,
 		dbNew:          database.New,
-		runCreateUser:  runCreateUser,
+		runCreateUser:  runUserCreate,
 		osExit:         osExit,
 	}
 }
 
-func runCreateUserCmdWithDeps(cmd *cobra.Command, _ []string, deps userCreateDeps) {
+func runUserCreateCmdWithDeps(cmd *cobra.Command, _ []string, deps userCreateDeps) {
 	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
 
 	username, email, password, err := deps.getUserDetails(cmd)
@@ -146,8 +146,8 @@ func runCreateUserCmdWithDeps(cmd *cobra.Command, _ []string, deps userCreateDep
 	fmt.Println("User created successfully!")
 }
 
-func runCreateUserCmd(cmd *cobra.Command, args []string) {
-	runCreateUserCmdWithDeps(cmd, args, defaultUserCreateDeps())
+func runUserCreateCmd(cmd *cobra.Command, args []string) {
+	runUserCreateCmdWithDeps(cmd, args, defaultUserCreateDeps())
 }
 
 func getDatabaseConfigForCmd() config.Database {
