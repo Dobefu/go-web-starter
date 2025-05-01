@@ -21,6 +21,14 @@ type Database struct {
 	DBName   string `mapstructure:"dbname"`
 }
 
+type Email struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Identity string `mapstructure:"identity"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+}
+
 type Log struct {
 	Level int `mapstructure:"level"`
 }
@@ -45,6 +53,7 @@ type Session struct {
 type Config struct {
 	Server   Server   `mapstructure:"server"`
 	Database Database `mapstructure:"database"`
+	Email    Email    `mapstructure:"email"`
 	Log      Log      `mapstructure:"log"`
 	Site     Site     `mapstructure:"site"`
 	Redis    Redis    `mapstructure:"redis"`
@@ -72,6 +81,13 @@ var DefaultConfig = Config{
 		User:     "root",
 		Password: "root",
 		DBName:   "db",
+	},
+	Email: Email{
+		Host:     "127.0.0.1",
+		Port:     5201,
+		Identity: "",
+		User:     "",
+		Password: "",
 	},
 	Log: Log{
 		Level: int(logger.InfoLevel),
