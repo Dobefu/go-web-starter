@@ -12,11 +12,10 @@ type Email struct {
 }
 
 func New(host, port, identity, username, password string) *Email {
-	email := &Email{}
-	email.addr = fmt.Sprintf("%s:%s", host, port)
-	email.auth = smtp.PlainAuth(identity, username, password, host)
-
-	return email
+	return &Email{
+		addr: fmt.Sprintf("%s:%s", host, port),
+		auth: smtp.PlainAuth(identity, username, password, host),
+	}
 }
 
 func (email *Email) SendMail(
