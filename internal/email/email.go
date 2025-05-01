@@ -11,10 +11,10 @@ type Email struct {
 	auth smtp.Auth
 }
 
-func New(addr string) *Email {
+func New(host, port, identity, username, password string) *Email {
 	email := &Email{}
-	email.addr = addr
-	email.auth = smtp.PlainAuth("", "", "", "127.0.0.1")
+	email.addr = fmt.Sprintf("%s:%s", host, port)
+	email.auth = smtp.PlainAuth(identity, username, password, host)
 
 	return email
 }
