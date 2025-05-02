@@ -1,0 +1,7 @@
+@import 'tailwindcss' source(none);
+
+@import './_base';
+
+@source '../../../../templates/components/layout';
+@source '../../../../templates/email';
+
