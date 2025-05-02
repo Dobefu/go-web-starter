@@ -149,7 +149,7 @@ func TestRunCreateUser_Success(t *testing.T) {
 		},
 	}
 
-	usr, err := runCreateUser(repo, log, "testuser", "test@example.com", "secret")
+	usr, err := runUserCreate(repo, log, "testuser", "test@example.com", "secret")
 	assert.NoError(t, err)
 	assert.NotNil(t, usr)
 	assert.Equal(t, "testuser", usr.GetUsername())
@@ -167,7 +167,7 @@ func TestRunCreateUser_Error_UserExists(t *testing.T) {
 		},
 	}
 
-	usr, err := runCreateUser(repo, log, "testuser", "test@example.com", "secret")
+	usr, err := runUserCreate(repo, log, "testuser", "test@example.com", "secret")
 	assert.Error(t, err)
 	assert.Nil(t, usr)
 }
@@ -184,7 +184,7 @@ func TestRunCreateUser_Error_SaveFails(t *testing.T) {
 		},
 	}
 
-	usr, err := runCreateUser(repo, log, "testuser", "test@example.com", "secret")
+	usr, err := runUserCreate(repo, log, "testuser", "test@example.com", "secret")
 	assert.Error(t, err)
 	assert.Nil(t, usr)
 }
@@ -235,7 +235,7 @@ func TestRunCreateUserCmd_Success(t *testing.T) {
 	}
 
 	out, errOut := captureStdoutStderr(func() {
-		runCreateUserCmdWithDeps(cmd, []string{}, deps)
+		runUserCreateCmdWithDeps(cmd, []string{}, deps)
 	})
 
 	assert.Contains(t, out, "User created successfully!")
@@ -260,7 +260,7 @@ func TestRunCreateUserCmd_GetUserDetailsError(t *testing.T) {
 	}
 
 	_, _ = captureStdoutStderr(func() {
-		runCreateUserCmdWithDeps(cmd, []string{}, deps)
+		runUserCreateCmdWithDeps(cmd, []string{}, deps)
 	})
 
 	assert.True(t, exitCalled)
@@ -284,7 +284,7 @@ func TestRunCreateUserCmd_DatabaseError(t *testing.T) {
 	}
 
 	_, _ = captureStdoutStderr(func() {
-		runCreateUserCmdWithDeps(cmd, []string{}, deps)
+		runUserCreateCmdWithDeps(cmd, []string{}, deps)
 	})
 
 	assert.True(t, exitCalled)
@@ -308,7 +308,7 @@ func TestRunCreateUserCmd_RunCreateUserError(t *testing.T) {
 	}
 
 	_, errOut := captureStdoutStderr(func() {
-		runCreateUserCmdWithDeps(cmd, []string{}, deps)
+		runUserCreateCmdWithDeps(cmd, []string{}, deps)
 	})
 
 	assert.True(t, exitCalled)
@@ -334,7 +334,7 @@ func TestRunCreateUserCmd_ProductionEntrypoint(t *testing.T) {
 	osExit = func(code int) { osExitCalled = true }
 	defer func() { osExit = originalOsExit }()
 
-	runCreateUserCmd(cmd, []string{})
+	runUserCreateCmd(cmd, []string{})
 	assert.True(t, osExitCalled)
 }
 
