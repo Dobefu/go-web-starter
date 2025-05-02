@@ -1,14 +1,11 @@
-@import "tailwindcss/theme.css" source(none);
-@import "tailwindcss/utilities.css" source(none);
+@import 'tailwindcss/theme.css' source(none);
+@import 'tailwindcss/utilities.css' source(none);
 
 @import './_base';
 
 @source '../../../../templates/email';
-@source '../../../../templates/components/atoms';
 
 *,
-::after,
-::before,
 ::backdrop {
   box-sizing: border-box;
   margin: 0;
@@ -19,7 +16,6 @@
 html,
 :host {
   line-height: 1.5;
-  tab-size: 4;
   font-family: sans-serif;
 }
 

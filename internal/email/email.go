@@ -61,12 +61,14 @@ func (email *Email) SendMail(
 	data := struct {
 		Stylesheet string
 		SiteName   string
+		SiteHost   string
 		Year       string
 		BuildHash  string
 		Data       any
 	}{
 		Stylesheet: string(stylesheet),
 		SiteName:   viper.GetString("site.name"),
+		SiteHost:   viper.GetString("site.host"),
 		Year:       time.Now().Format("2006"),
 		BuildHash:  config.BuildHash,
 		Data:       body.Data,

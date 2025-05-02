@@ -5,3 +5,4 @@ bun.lock
 
 # Layout files (will cause a "Found invalid node root") error otherwise.
 internal/templates/layouts/*.gohtml
+internal/templates/email/layouts/*.gohtml
