@@ -24,8 +24,9 @@ func init() {
 
 func runTestEmailCmd(cmd *cobra.Command, args []string) {
 	log := logger.New(logger.Level(config.GetLogLevel()), os.Stdout)
+	var err error
 
-	recipient, err := cmd.Flags().GetString("email")
+	recipient, _ := cmd.Flags().GetString("email")
 
 	if recipient == "" {
 		recipient, err = promptForString("Enter Email: ")
@@ -49,7 +50,12 @@ func runTestEmailCmd(cmd *cobra.Command, args []string) {
 		viper.GetString("email.password"),
 	)
 
-	err = emailClient.SendMail("", []string{recipient}, "subject", "<h1>body</h1>")
+	body := email.EmailBody{
+		Template: "email/test_email",
+		Data:     nil,
+	}
+
+	err = emailClient.SendMail("", []string{recipient}, "subject", body)
 
 	if err != nil {
 		log.Error(err.Error(), nil)

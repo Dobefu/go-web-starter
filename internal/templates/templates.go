@@ -15,7 +15,7 @@ import (
 	"github.com/tdewolff/minify/v2/html"
 )
 
-//go:embed components/**/*.gohtml layouts/*.gohtml pages/*.gohtml
+//go:embed components/**/*.gohtml layouts/*.gohtml pages/*.gohtml email/*.gohtml email/**/*.gohtml
 var TemplateFS embed.FS
 
 func LoadTemplates(router *gin.Engine) error {

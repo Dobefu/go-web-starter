@@ -1,0 +1,46 @@
+{{- define "email/layouts/default/head" -}}
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+      <style type="text/css">{{- .Stylesheet -}}</style>
+    </head>
+    <body class="flex flex-col antialiased gap-4 bg-zinc-50">
+      <div class="container mx-auto p-4">
+        <nav class="flex items-center justify-between gap-4" role="navigation">
+          <a class="py-2 text-xl font-medium" href="/">
+            {{- .SiteName -}}
+          </a>
+        </div>
+      </div>
+
+      <div class="flex-1 px-4 flex mx-auto container flex-col gap-4" id="main-content">
+{{- end -}}
+
+{{- define "email/layouts/default/foot" -}}
+      </div>
+
+      <div class="container mx-auto py-4 text-center text-zinc-600">
+        <nav class="flex items-center justify-center gap-2 text-sm max-sm:flex-col">
+          <div>
+            Copyright &copy;
+            {{- " " -}}
+            {{- .Year -}}{{- " " -}}
+            {{- .SiteName -}}
+          </div>
+
+          <span class="text-zinc-300 max-sm:hidden">•</span>
+
+          <div>
+            Created by
+            {{- " " -}}
+            {{- template "components/atoms/link" dict "Text" "Connor van Spronssen" "Href" "https://cv.connor.nl" -}}
+          </div>
+        </nav>
+      </div>
+    </body>
+  </html>
+{{- end -}}
