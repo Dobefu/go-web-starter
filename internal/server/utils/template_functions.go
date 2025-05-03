@@ -36,6 +36,9 @@ func TemplateFuncMap() template.FuncMap {
 		"html": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"css": func(s string) template.CSS {
+			return template.CSS(s)
+		},
 		"startswith": func(s, prefix string) bool {
 			return strings.HasPrefix(s, prefix)
 		},

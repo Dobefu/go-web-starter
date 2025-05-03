@@ -1,19 +1,11 @@
 package email
 
 import (
-	"bytes"
 	"crypto/rand"
 	"fmt"
 	"net/smtp"
 	"strings"
-	"text/template"
 	"time"
-
-	"github.com/Dobefu/go-web-starter/internal/config"
-	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
-	"github.com/Dobefu/go-web-starter/internal/static"
-	"github.com/Dobefu/go-web-starter/internal/templates"
-	"github.com/spf13/viper"
 )
 
 type Email struct {
@@ -39,54 +31,13 @@ func (email *Email) SendMail(
 	subject string,
 	body EmailBody,
 ) error {
-	t := template.New(body.Template)
-	t.Funcs(server_utils.TemplateFuncMap())
-
-	t, err := t.ParseFS(
-		templates.TemplateFS,
-		"email/*.gohtml",
-		"email/layouts/*.gohtml",
-		"components/atoms/*.gohtml",
-	)
-
-	if err != nil {
-		return err
-	}
-
-	stylesheet, err := static.StaticFS.ReadFile("static/css/dist/email.css")
-
-	if err != nil {
-		return err
-	}
-
-	data := struct {
-		Stylesheet string
-		SiteName   string
-		SiteHost   string
-		Year       string
-		BuildHash  string
-		Data       any
-	}{
-		Stylesheet: string(stylesheet),
-		SiteName:   viper.GetString("site.name"),
-		SiteHost:   viper.GetString("site.host"),
-		Year:       time.Now().Format("2006"),
-		BuildHash:  config.BuildHash,
-		Data:       body.Data,
-	}
-
-	if err != nil {
-		return err
-	}
-
-	var tpl bytes.Buffer
-	err = t.ExecuteTemplate(&tpl, body.Template, data)
-
-	if err != nil {
-		return err
-	}
-
 	boundary := rand.Text()
+
+	html, err := getTemplateHtml(body)
+
+	if err != nil {
+		return err
+	}
 
 	msg := strings.Join([]string{
 		fmt.Sprintf("From: %s", from),
@@ -100,9 +51,14 @@ func (email *Email) SendMail(
 		"Content-Type: text/html; charset=UTF-8",
 		"Content-Transfer-Encoding: 7bit",
 		"",
-		tpl.String(),
+		html,
 		"",
 		fmt.Sprintf("--%s", boundary),
+		"Content-Type: text/plain; charset=UTF-8",
+		"Content-Transfer-Encoding: 7bit",
+		"",
+		html,
+		"",
 		fmt.Sprintf("--%s--", boundary),
 	}, "\r\n")
 
