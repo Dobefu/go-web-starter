@@ -38,8 +38,8 @@ func TestDict(t *testing.T) {
 	}
 }
 
-func TestRaw(t *testing.T) {
-	raw := TemplateFuncMap()["raw"].(func(string) template.HTML)
+func TestHtml(t *testing.T) {
+	html := TemplateFuncMap()["html"].(func(string) template.HTML)
 
 	tests := []struct {
 		name string
@@ -53,7 +53,7 @@ func TestRaw(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := string(raw(tt.in))
+			got := string(html(tt.in))
 			assert.Equal(t, tt.want, got)
 		})
 	}
