@@ -13,13 +13,12 @@ func getTextFromHtml(htmlString string) string {
 	tokenizer := html.NewTokenizer(strings.NewReader(htmlString))
 	prevToken := tokenizer.Token()
 
-domLoop:
 	for {
 		token := tokenizer.Next()
 
 		switch token {
 		case html.ErrorToken:
-			break domLoop
+			return result
 
 		case html.StartTagToken:
 			prevToken = tokenizer.Token()
@@ -39,12 +38,10 @@ domLoop:
 			}
 
 			if prevToken.Data == "a" {
-				for _, attr := range prevToken.Attr {
-					if attr.Key != "href" {
-						continue
-					}
+				href := getAttributeValue(prevToken.Attr, "href")
 
-					txt = fmt.Sprintf("%s (%s)", txt, attr.Val)
+				if len(href) > 0 {
+					txt = fmt.Sprintf("%s (%s)", txt, href)
 				}
 			}
 
@@ -59,6 +56,16 @@ domLoop:
 			}
 		}
 	}
+}
 
-	return result
+func getAttributeValue(attributes []html.Attribute, attributeName string) string {
+	for _, attr := range attributes {
+		if attr.Key != "href" {
+			continue
+		}
+
+		return attr.Val
+	}
+
+	return ""
 }
