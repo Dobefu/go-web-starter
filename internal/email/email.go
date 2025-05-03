@@ -89,7 +89,7 @@ func (email *Email) SendMail(
 		fmt.Sprintf("From: %s", from),
 		fmt.Sprintf("To: %s", to),
 		fmt.Sprintf("Subject: %s", subject),
-		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC3339)),
+		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC1123Z)),
 		"Content-Type: text/html",
 		"",
 		tpl.String(),
