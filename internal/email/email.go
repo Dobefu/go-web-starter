@@ -2,6 +2,7 @@ package email
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"net/smtp"
 	"strings"
@@ -85,16 +86,24 @@ func (email *Email) SendMail(
 		return err
 	}
 
+	boundary := rand.Text()
+
 	msg := strings.Join([]string{
 		fmt.Sprintf("From: %s", from),
 		fmt.Sprintf("To: %s", to),
 		fmt.Sprintf("Subject: %s", subject),
 		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC1123Z)),
-		"Content-Type: text/html",
+		fmt.Sprintf(`Content-Type: multipart/alternative'; boundary="%s"`, boundary),
 		"MIME-Version: 1.0",
+		"",
+		fmt.Sprintf("--%s", boundary),
+		"Content-Type: text/html; charset=UTF-8",
+		"Content-Transfer-Encoding: 7bit",
 		"",
 		tpl.String(),
 		"",
+		fmt.Sprintf("--%s", boundary),
+		fmt.Sprintf("--%s--", boundary),
 	}, "\r\n")
 
 	return smtp.SendMail(email.addr, email.auth, from, to, []byte(msg))
