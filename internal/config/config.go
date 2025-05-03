@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var defaultHost = "127.0.0.1"
+
 type Server struct {
 	Port int    `mapstructure:"port"`
 	Host string `mapstructure:"host"`
@@ -76,14 +78,14 @@ var DefaultConfig = Config{
 		Host: "localhost",
 	},
 	Database: Database{
-		Host:     "127.0.0.1",
+		Host:     defaultHost,
 		Port:     2345,
 		User:     "root",
 		Password: "root",
 		DBName:   "db",
 	},
 	Email: Email{
-		Host:     "127.0.0.1",
+		Host:     defaultHost,
 		Port:     5201,
 		Identity: "",
 		User:     "",
@@ -98,7 +100,7 @@ var DefaultConfig = Config{
 	},
 	Redis: Redis{
 		Enable:   true,
-		Host:     "127.0.0.1",
+		Host:     defaultHost,
 		Port:     9736,
 		Password: "root",
 		DB:       0,
