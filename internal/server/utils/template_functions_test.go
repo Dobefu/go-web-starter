@@ -59,6 +59,26 @@ func TestHtml(t *testing.T) {
 	}
 }
 
+func TestCss(t *testing.T) {
+	css := TemplateFuncMap()["css"].(func(string) template.CSS)
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"simple CSS", "*{box-sizing:border-box}", "*{box-sizing:border-box}"},
+		{"empty string", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := string(css(tt.in))
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestStartsWith(t *testing.T) {
 	startswith := TemplateFuncMap()["startswith"].(func(string, string) bool)
 
