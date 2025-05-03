@@ -1,6 +1,7 @@
 {{- define "email/test_email" -}}
   {{- template "email/layouts/default/head" . -}}
 
-  test
+  If you see this email, it means that sending email from your {{ .SiteName }}
+  application works.
   {{- template "email/layouts/default/foot" . -}}
 {{- end -}}

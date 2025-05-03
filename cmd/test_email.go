@@ -55,7 +55,12 @@ func runTestEmailCmd(cmd *cobra.Command, args []string) {
 		Data:     nil,
 	}
 
-	err = emailClient.SendMail("", []string{recipient}, "subject", body)
+	err = emailClient.SendMail(
+		viper.GetString("site.email"),
+		[]string{recipient},
+		"The test email has been sent successfully!",
+		body,
+	)
 
 	if err != nil {
 		log.Error(err.Error(), nil)
