@@ -25,7 +25,10 @@ domLoop:
 			prevToken = tokenizer.Token()
 
 		case html.TextToken:
-			if prevToken.Data == "script" || prevToken.Data == "style" {
+			if prevToken.Data == "script" ||
+				prevToken.Data == "style" ||
+				prevToken.Data == "head" ||
+				prevToken.Data == "html" {
 				continue
 			}
 
@@ -35,7 +38,25 @@ domLoop:
 				continue
 			}
 
+			if prevToken.Data == "a" {
+				for _, attr := range prevToken.Attr {
+					if attr.Key != "href" {
+						continue
+					}
+
+					txt = fmt.Sprintf("%s (%s)", txt, attr.Val)
+				}
+			}
+
+			if strings.Contains(prevToken.String(), "footer") {
+				result = fmt.Sprintf("%s\n\n", result)
+			}
+
 			result = fmt.Sprintf("%s%s\n", result, txt)
+
+			if strings.Contains(prevToken.String(), "text-xl") {
+				result = fmt.Sprintf("%s%s\n\n\n", result, strings.Repeat("-", len(txt)))
+			}
 		}
 	}
 
