@@ -33,11 +33,13 @@ func (email *Email) SendMail(
 ) error {
 	boundary := rand.Text()
 
-	html, err := getTemplateHtml(body)
+	emailHtml, err := getTemplateHtml(body)
 
 	if err != nil {
 		return err
 	}
+
+	emailText := getTextFromHtml(emailHtml)
 
 	msg := strings.Join([]string{
 		fmt.Sprintf("From: %s", from),
@@ -51,13 +53,13 @@ func (email *Email) SendMail(
 		"Content-Type: text/html; charset=UTF-8",
 		"Content-Transfer-Encoding: 7bit",
 		"",
-		html,
+		emailHtml,
 		"",
 		fmt.Sprintf("--%s", boundary),
 		"Content-Type: text/plain; charset=UTF-8",
 		"Content-Transfer-Encoding: 7bit",
 		"",
-		html,
+		emailText,
 		"",
 		fmt.Sprintf("--%s--", boundary),
 	}, "\r\n")
