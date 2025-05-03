@@ -88,6 +88,7 @@ func (email *Email) SendMail(
 	msg := strings.Join([]string{
 		fmt.Sprintf("To: %s", to),
 		fmt.Sprintf("Subject: %s", subject),
+		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC3339)),
 		"Content-Type: text/html",
 		"",
 		tpl.String(),
