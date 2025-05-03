@@ -91,6 +91,7 @@ func (email *Email) SendMail(
 		fmt.Sprintf("Subject: %s", subject),
 		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC1123Z)),
 		"Content-Type: text/html",
+		"MIME-Version: 1.0",
 		"",
 		tpl.String(),
 		"",
