@@ -1,10 +1,12 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
+	emailer "github.com/Dobefu/go-web-starter/internal/email"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
@@ -13,6 +15,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 var findByEmail = user.FindByEmail
@@ -104,6 +107,30 @@ func RegisterPost(c *gin.Context) {
 
 	if err != nil {
 		log.Error("Failed to save the user", logger.Fields{"err": err.Error()})
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	mail := emailer.New(
+		viper.GetString("email.host"),
+		viper.GetString("email.port"),
+		viper.GetString("email.identity"),
+		viper.GetString("email.user"),
+		viper.GetString("email.password"),
+	)
+
+	err = mail.SendMail(
+		viper.GetString("site.email"),
+		[]string{email},
+		fmt.Sprintf("Activate your %s account", viper.GetString("site.name")),
+		emailer.EmailBody{
+			Template: "email/test_email",
+		},
+	)
+
+	if err != nil {
+		log.Error("Failed to send the registation email", logger.Fields{"err": err.Error()})
 		RenderRouteHTML(c, GenericErrorData(c))
 
 		return
