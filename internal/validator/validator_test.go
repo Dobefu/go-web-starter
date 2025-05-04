@@ -207,12 +207,30 @@ func TestValidateForm(t *testing.T) {
 
 func TestGetFormValue(t *testing.T) {
 	v := New()
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"basic value", "value1", "value1"},
+		{"control chars stripped", "va\x00l\x01u\x02e\x03\t2\n", "value\t2"},
+		{"only control chars", "\x00\x01\x02\x03", ""},
+		{"tabs and spaces", "\t \t", "\t \t"},
+		{"empty value", "", ""},
+	}
+
 	req := httptest.NewRequest("POST", "/", nil)
 	req.Form = make(map[string][]string)
-	req.Form["field1"] = []string{"value1"}
 
-	value := v.GetFormValue(req, "field1")
-	assert.Equal(t, "value1", value)
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			field := fmt.Sprintf("field%d", (i + 1))
+			req.Form[field] = []string{tc.input}
+
+			value := v.GetFormValue(req, field)
+			assert.Equal(t, tc.expected, value)
+		})
+	}
 }
 
 func TestSessionOperations(t *testing.T) {
