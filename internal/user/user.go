@@ -51,6 +51,10 @@ func (user *User) GetStatus() (status bool) {
 	return user.status
 }
 
+func (user *User) SetStatus(status bool) {
+	user.status = status
+}
+
 func (user *User) GetCreatedAt() (createdAt time.Time) {
 	return user.createdAt
 }
