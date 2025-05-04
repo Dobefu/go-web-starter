@@ -144,10 +144,10 @@ func RegisterPost(c *gin.Context) {
 
 	v.SetFlash(message.Message{
 		Type: message.MessageTypeSuccess,
-		Body: "Your account has been created!",
+		Body: "Your account has been created! Please check you inbox for further instructions.",
 	})
 
-	c.Redirect(http.StatusSeeOther, "/login")
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/register/verify?email=%s", email))
 }
 
 func redirectToRegisterWithError(c *gin.Context, v *validator.Validator, username string, email string, flashMsg string) {

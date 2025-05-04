@@ -1,0 +1,24 @@
+{{- define "pages/register_verify" -}}
+  {{- template "layouts/default/head" . -}}
+
+
+  <div
+    class="mx-auto flex w-full max-w-xl flex-col gap-8 rounded-lg bg-white p-8 shadow"
+  >
+    <div class="text-center">
+      {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
+    </div>
+
+    {{- if .Data.Token -}}
+      {{ .Data.Token }}
+    {{- else -}}
+      <p>
+        An email has been sent to {{ .Data.Email }}.
+        <br />
+        Please check your email and click the link to verify your account.
+      </p>
+    {{- end -}}
+  </div>
+
+  {{- template "layouts/default/foot" . -}}
+{{- end -}}

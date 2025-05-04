@@ -17,6 +17,7 @@ func RegisterRoutes(router gin.IRouter) {
 	anonOnly.POST("/login", LoginPost)
 	anonOnly.GET("/register", Register)
 	anonOnly.POST("/register", RegisterPost)
+	anonOnly.GET("/register/verify", RegisterVerify)
 
 	authOnly := router.Group("/")
 	authOnly.Use(middleware.AuthOnly())
