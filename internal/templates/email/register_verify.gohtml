@@ -14,9 +14,11 @@
   <br />
 
   <a
-    class="btn"
+    class="btn inline-flex items-center gap-2"
     href="{{ .SiteHost }}/register/verify?token={{ .Data.Token }}&email={{ .Data.Email }}"
   >
+    {{- template "components/atoms/icon" dict "Icon" "email" "Classes" "size-5" -}}
+
     Verify email address
   </a>
 
