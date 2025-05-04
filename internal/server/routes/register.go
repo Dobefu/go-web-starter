@@ -132,6 +132,7 @@ func RegisterPost(c *gin.Context) {
 			Data: map[string]any{
 				"Username": username,
 				"Token":    token,
+				"Email":    email,
 			},
 		},
 	)

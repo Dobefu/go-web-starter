@@ -111,7 +111,7 @@ func (user *User) Save(db database.DatabaseInterface) (err error) {
 	err = row.Scan(&updatedAt)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update user: %w", err)
 	}
 
 	user.updatedAt = updatedAt

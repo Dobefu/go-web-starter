@@ -141,7 +141,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
 					WillReturnError(sql.ErrConnDone)
 			},
-			wantErr: "failed to update user",
+			wantErr: sql.ErrConnDone.Error(),
 		},
 		{
 			name: "update scan error",
@@ -152,7 +152,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
 					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(nil).RowError(0, sql.ErrNoRows))
 			},
-			wantErr: "failed to update user",
+			wantErr: sql.ErrNoRows.Error(),
 		},
 		{
 			name: "update success",
@@ -184,11 +184,14 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				assert.ErrorContains(t, err, tc.wantErr)
 			} else {
 				assert.NoError(t, err)
-				if tc.name == "insert success" {
+
+				switch tc.name {
+				case "insert success":
 					assert.Equal(t, 99, user.GetID())
 					assert.WithinDuration(t, now, user.GetCreatedAt(), time.Second)
 					assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)
-				} else if tc.name == "update success" {
+
+				case "update success":
 					assert.Equal(t, 42, user.GetID())
 					assert.Equal(t, time.Unix(testCreatedAtUnix, 0), user.GetCreatedAt())
 					assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)

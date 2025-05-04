@@ -9,15 +9,11 @@
       {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
     </div>
 
-    {{- if .Data.Token -}}
-      {{ .Data.Token }}
-    {{- else -}}
-      <p>
-        An email has been sent to {{ .Data.Email }}.
-        <br />
-        Please check your email and click the link to verify your account.
-      </p>
-    {{- end -}}
+    <p>
+      An email has been sent to {{ .Data.Email }}.
+      <br />
+      Please check your email and click the link to verify your account.
+    </p>
   </div>
 
   {{- template "layouts/default/foot" . -}}
