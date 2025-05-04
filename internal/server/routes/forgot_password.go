@@ -147,14 +147,7 @@ func ForgotPasswordPost(c *gin.Context) {
 
 	foundUser, err := findByEmail(db, email)
 
-	if err != nil {
-		v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: msgPasswdReset})
-		c.Redirect(http.StatusSeeOther, "/login")
-
-		return
-	}
-
-	if !foundUser.GetStatus() {
+	if err != nil || !foundUser.GetStatus() {
 		v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: msgPasswdReset})
 		c.Redirect(http.StatusSeeOther, "/login")
 
