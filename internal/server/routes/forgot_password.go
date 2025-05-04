@@ -11,16 +11,81 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
+	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
-const msgPasswdReset = "If your email address exists and has an account associated, password reset instructions have been sent."
+const (
+	msgPasswdReset = "If your email address exists and has an account associated, password reset instructions have been sent."
+
+	errUserPasswdVerify = "Could not verify the password reset token."
+)
 
 func ForgotPassword(c *gin.Context) {
 	v := validator.New()
 	v.SetContext(c)
+
+	email := v.GetFormValue(c.Request, "email")
+	token := v.GetFormValue(c.Request, "token")
+
+	if len(email) > 0 && len(token) > 0 {
+		log := logger.New(config.GetLogLevel(), os.Stdout)
+		db, err := route_utils.GetDbFromContext(c)
+
+		if err != nil {
+			log.Error("Could not get the database from the context", logger.Fields{"err": err.Error()})
+			RenderRouteHTML(c, GenericErrorData(c))
+
+			return
+		}
+
+		usr, err := user.FindByEmail(db, email)
+
+		if err != nil {
+			log.Warn("Could not get the user from the email address", logger.Fields{"err": err.Error()})
+
+			v.SetFlash(message.Message{
+				Type: message.MessageTypeError,
+				Body: errUserPasswdVerify,
+			})
+
+			c.Redirect(http.StatusSeeOther, routeRegister)
+			return
+		}
+
+		expectedToken := usr.CreateVerificationToken()
+
+		if token != expectedToken || !usr.GetStatus() {
+			v.SetFlash(message.Message{
+				Type: message.MessageTypeError,
+				Body: errUserPasswdVerify,
+			})
+
+			c.Redirect(http.StatusSeeOther, routeRegister)
+			return
+		}
+
+		session := getSession(c)
+		session.Set("userID", usr.GetID())
+		err = session.Save()
+
+		if err != nil {
+			log.Error("Failed to save session after verification login", logger.Fields{"err": err.Error()})
+			RenderRouteHTML(c, GenericErrorData(c))
+
+			return
+		}
+
+		v.SetFlash(message.Message{
+			Type: message.MessageTypeSuccess,
+			Body: "You have used your one-time login token. Please change your password.",
+		})
+
+		c.Redirect(http.StatusSeeOther, "/account")
+		return
+	}
 
 	csrfToken := middleware.GetCSRFToken(c)
 

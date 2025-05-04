@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	errUserAccount = "Could not verify the user account."
+	errUserAccountVerify = "Could not verify the user account."
 
 	routeRegister = "/register"
 )
@@ -67,7 +67,7 @@ func RegisterVerify(c *gin.Context) {
 
 		v.SetFlash(message.Message{
 			Type: message.MessageTypeError,
-			Body: errUserAccount,
+			Body: errUserAccountVerify,
 		})
 
 		c.Redirect(http.StatusSeeOther, routeRegister)
@@ -79,7 +79,7 @@ func RegisterVerify(c *gin.Context) {
 	if token != expectedToken || usr.GetStatus() {
 		v.SetFlash(message.Message{
 			Type: message.MessageTypeError,
-			Body: errUserAccount,
+			Body: errUserAccountVerify,
 		})
 
 		c.Redirect(http.StatusSeeOther, routeRegister)
