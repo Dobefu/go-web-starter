@@ -125,7 +125,7 @@ func RegisterPost(c *gin.Context) {
 		[]string{email},
 		fmt.Sprintf("Activate your %s account", viper.GetString("site.name")),
 		emailer.EmailBody{
-			Template: "email/test_email",
+			Template: "email/register_verify",
 		},
 	)
 
