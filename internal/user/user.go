@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"crypto/sha256"
+	"encoding/hex"
+
 	"github.com/Dobefu/go-web-starter/internal/database"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -236,4 +239,18 @@ func New(id int, username, email, password string, status bool, createdAt, updat
 		createdAt: createdAt,
 		updatedAt: updatedAt,
 	}
+}
+
+func (user *User) CreateVerificationToken() string {
+	data := fmt.Sprintf(
+		"%d:%s:%d:%s:%t",
+		user.GetUpdatedAt().UnixNano(),
+		user.GetEmail(),
+		user.GetID(),
+		user.password,
+		user.status,
+	)
+
+	hash := sha256.Sum256([]byte(data))
+	return hex.EncodeToString(hash[:])
 }

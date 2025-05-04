@@ -113,6 +113,8 @@ func RegisterPost(c *gin.Context) {
 		return
 	}
 
+	token := usr.CreateVerificationToken()
+
 	mail := emailer.New(
 		viper.GetString("email.host"),
 		viper.GetString("email.port"),
@@ -129,6 +131,7 @@ func RegisterPost(c *gin.Context) {
 			Template: "email/register_verify",
 			Data: map[string]any{
 				"Username": username,
+				"Token":    token,
 			},
 		},
 	)
