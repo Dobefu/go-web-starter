@@ -15,7 +15,7 @@ type Email struct {
 
 type EmailBody struct {
 	Template string
-	Data     any
+	Data     map[string]any
 }
 
 func New(host, port, identity, username, password string) *Email {
