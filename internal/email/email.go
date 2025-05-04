@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type EmailSender interface {
+	SendMail(from string, to []string, subject string, body EmailBody) error
+}
+
 type Email struct {
 	addr string
 	auth smtp.Auth
@@ -17,6 +21,8 @@ type EmailBody struct {
 	Template string
 	Data     map[string]any
 }
+
+var smtpSendMail = smtp.SendMail
 
 func New(host, port, identity, username, password string) *Email {
 	return &Email{
@@ -46,7 +52,7 @@ func (email *Email) SendMail(
 		fmt.Sprintf("To: %s", to),
 		fmt.Sprintf("Subject: %s", subject),
 		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC1123Z)),
-		fmt.Sprintf(`Content-Type: multipart/alternative'; boundary="%s"`, boundary),
+		fmt.Sprintf(`Content-Type: multipart/alternative'; boundary=\"%s\"`, boundary),
 		"MIME-Version: 1.0",
 		"",
 		fmt.Sprintf("--%s", boundary),
@@ -64,5 +70,5 @@ func (email *Email) SendMail(
 		fmt.Sprintf("--%s--", boundary),
 	}, "\r\n")
 
-	return smtp.SendMail(email.addr, email.auth, from, to, []byte(msg))
+	return smtpSendMail(email.addr, email.auth, from, to, []byte(msg))
 }
