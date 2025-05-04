@@ -73,7 +73,7 @@ func processTextToken(tokenizer *html.Tokenizer, prevToken html.Token) (result s
 
 func getAttributeValue(attributes []html.Attribute, attributeName string) string {
 	for _, attr := range attributes {
-		if attr.Key != "href" {
+		if attr.Key != attributeName {
 			continue
 		}
 
