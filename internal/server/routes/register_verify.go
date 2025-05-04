@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
+const (
 	errUserAccount = "Could not verify the user account."
 
 	routeRegister = "/register"
