@@ -1,6 +1,21 @@
 {{- define "email/register_verify" -}}
   {{- template "email/layouts/default/head" . -}}
 
-  register_verify
+
+  <p>Hi {{ .Data.Username }},</p>
+  <br />
+
+  <p>Thank you for creating your {{ .SiteName }} account!</p>
+  <p>
+    To verify your email address and activate your account, please click the
+    button below:
+  </p>
+
+  <br />
+
+  <a class="btn" href="{{ .SiteHost }}/password/verify?token={{ "CHANGEME" }}">
+    Verify email address
+  </a>
+
   {{- template "email/layouts/default/foot" . -}}
 {{- end -}}
