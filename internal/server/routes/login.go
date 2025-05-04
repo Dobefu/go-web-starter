@@ -54,6 +54,7 @@ func LoginPost(c *gin.Context) {
 	email := v.GetFormValue(c.Request, "email")
 	password := v.GetFormValue(c.Request, "password")
 
+	v.ValidEmail("email", email)
 	v.Required("email", email)
 	v.Required("password", password)
 

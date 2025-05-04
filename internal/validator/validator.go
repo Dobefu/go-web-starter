@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"strings"
 	"unicode/utf8"
 
@@ -20,6 +21,7 @@ const (
 	msgFormProcessing = "Failed to process form data"
 	msgMinLength      = "This field must be at least %d characters long"
 	msgMaxLength      = "This field must be no more than %d characters long"
+	msgEmailInvalid   = "This is not a valid email address"
 	msgPasswordsMatch = "The passwords do not match"
 )
 
@@ -140,6 +142,11 @@ func (v *Validator) MinLength(field, value string, min int) {
 
 func (v *Validator) MaxLength(field, value string, max int) {
 	v.CheckField(len(strings.TrimSpace(value)) <= max, field, fmt.Sprintf(msgMaxLength, max))
+}
+
+func (v *Validator) ValidEmail(field, value string) {
+	_, err := mail.ParseAddress(strings.TrimSpace(value))
+	v.CheckField(err == nil, field, msgEmailInvalid)
 }
 
 func (v *Validator) PasswordsMatch(field, password1 string, password2 string) {

@@ -61,6 +61,7 @@ func RegisterPost(c *gin.Context) {
 	password := v.GetFormValue(c.Request, "password")
 	passwordConfirm := v.GetFormValue(c.Request, "password_confirm")
 
+	v.ValidEmail("email", email)
 	v.Required("email", email)
 	v.Required("username", username)
 	v.Required("password", password)
