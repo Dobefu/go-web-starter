@@ -56,6 +56,11 @@ func getCurrentUser(c *gin.Context) *user.User {
 			"id":    id,
 			"error": err.Error(),
 		})
+
+		session := sessions.Default(c)
+		session.Clear()
+		_ = session.Save()
+
 		return nil
 	}
 
