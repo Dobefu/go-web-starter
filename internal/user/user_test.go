@@ -100,8 +100,10 @@ func TestUser_Save_TableDriven(t *testing.T) {
 		wantErr   string
 	}{
 		{
-			name: "query row error",
+			name: "insert query row error",
 			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 0
+
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(sql.ErrConnDone)
@@ -109,8 +111,10 @@ func TestUser_Save_TableDriven(t *testing.T) {
 			wantErr: sql.ErrConnDone.Error(),
 		},
 		{
-			name: "scan error",
+			name: "insert scan error",
 			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 0
+
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(nil, nil, nil).RowError(0, sql.ErrNoRows))
@@ -118,11 +122,46 @@ func TestUser_Save_TableDriven(t *testing.T) {
 			wantErr: sql.ErrNoRows.Error(),
 		},
 		{
-			name: "success",
+			name: "insert success",
 			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 0
+
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(99, now, now))
+			},
+			wantErr: "",
+		},
+		{
+			name: "update query row error",
+			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 42
+
+				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WillReturnError(sql.ErrConnDone)
+			},
+			wantErr: "failed to update user",
+		},
+		{
+			name: "update scan error",
+			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 42
+
+				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(nil).RowError(0, sql.ErrNoRows))
+			},
+			wantErr: "failed to update user",
+		},
+		{
+			name: "update success",
+			mockSetup: func(mock sqlmock.Sqlmock, user *User, now time.Time) {
+				user.id = 42
+
+				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(now))
 			},
 			wantErr: "",
 		},
@@ -145,9 +184,15 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				assert.ErrorContains(t, err, tc.wantErr)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, 99, user.GetID())
-				assert.WithinDuration(t, now, user.GetCreatedAt(), time.Second)
-				assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)
+				if tc.name == "insert success" {
+					assert.Equal(t, 99, user.GetID())
+					assert.WithinDuration(t, now, user.GetCreatedAt(), time.Second)
+					assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)
+				} else if tc.name == "update success" {
+					assert.Equal(t, 42, user.GetID())
+					assert.Equal(t, time.Unix(testCreatedAtUnix, 0), user.GetCreatedAt())
+					assert.WithinDuration(t, now, user.GetUpdatedAt(), time.Second)
+				}
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
