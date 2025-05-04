@@ -17,22 +17,46 @@ import (
 func TestRegisterVerify(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	viper.Set("site.name", "Test Site")
-	viper.Set("site.host", "http://localhost:8080")
+	tests := []struct {
+		name       string
+		path       string
+		wantStatus int
+	}{
+		{
+			name:       "without query params",
+			path:       "/",
+			wantStatus: http.StatusSeeOther,
+		},
+		{
+			name:       "with email only",
+			path:       "/?email=test@example.com",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "with email and token",
+			path:       "/?email=test@example.com&token=test-token",
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
 
-	router := gin.New()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			viper.Set("site.name", "Test Site")
+			viper.Set("site.host", "http://localhost:8080")
 
-	store := cookie.NewStore([]byte("secret"))
-	router.Use(sessions.Sessions("mysession", store))
+			router := gin.New()
+			store := cookie.NewStore([]byte("secret"))
+			router.Use(sessions.Sessions("mysession", store))
+			router.SetFuncMap(server_utils.TemplateFuncMap())
+			err := templates.LoadTemplates(router)
+			assert.NoError(t, err)
+			router.GET("/", RegisterVerify)
 
-	router.SetFuncMap(server_utils.TemplateFuncMap())
-	err := templates.LoadTemplates(router)
-	assert.NoError(t, err)
-	router.GET("/", RegisterVerify)
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", tt.path, nil)
+			router.ServeHTTP(w, req)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusSeeOther, w.Code)
+			assert.Equal(t, tt.wantStatus, w.Code)
+		})
+	}
 }
