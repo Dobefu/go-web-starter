@@ -23,6 +23,7 @@ const (
 	findUserByEmailQuery    = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE email = $1`
 	findUserByUsernameQuery = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE username = $1`
 	findUserByIDQuery       = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`
+	updateUserQuery         = `UPDATE users SET username = $1, email = $2, password = $3, status = $4, updated_at = $5 WHERE id = $6 RETURNING updated_at`
 )
 
 type User struct {
@@ -78,20 +79,42 @@ func (user *User) CheckPassword(password string) error {
 }
 
 func (user *User) Save(db database.DatabaseInterface) (err error) {
-	row := db.QueryRow(insertUserQuery,
+	if user.id == 0 {
+		row := db.QueryRow(insertUserQuery,
+			user.username,
+			user.email,
+			user.password,
+			user.status,
+			time.Now(),
+			time.Now(),
+		)
+
+		err = row.Scan(&user.id, &user.createdAt, &user.updatedAt)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	row := db.QueryRow(updateUserQuery,
 		user.username,
 		user.email,
 		user.password,
 		user.status,
 		time.Now(),
-		time.Now(),
+		user.id,
 	)
 
-	err = row.Scan(&user.id, &user.createdAt, &user.updatedAt)
+	var updatedAt time.Time
+	err = row.Scan(&updatedAt)
+
 	if err != nil {
-		return fmt.Errorf("failed to save user: %w", err)
+		return err
 	}
 
+	user.updatedAt = updatedAt
 	return nil
 }
 
