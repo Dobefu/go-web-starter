@@ -52,7 +52,7 @@ func (email *Email) SendMail(
 		fmt.Sprintf("To: %s", to),
 		fmt.Sprintf("Subject: %s", subject),
 		fmt.Sprintf("Date: %s", time.Now().UTC().Format(time.RFC1123Z)),
-		fmt.Sprintf(`Content-Type: multipart/alternative'; boundary=\"%s\"`, boundary),
+		fmt.Sprintf(`Content-Type: multipart/alternative'; boundary="%s"`, boundary),
 		"MIME-Version: 1.0",
 		"",
 		fmt.Sprintf("--%s", boundary),
