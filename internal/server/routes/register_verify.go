@@ -92,6 +92,20 @@ func RegisterVerify(c *gin.Context) {
 		return
 	}
 
-	v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: "Your email has been verified! You can now log in."})
-	c.Redirect(http.StatusSeeOther, "/login")
+	session := getSession(c)
+	session.Set("userID", usr.GetID())
+	err = session.Save()
+
+	if err != nil {
+		log.Error("Failed to save session after verification login", logger.Fields{"err": err.Error()})
+		RenderRouteHTML(c, GenericErrorData(c))
+
+		return
+	}
+
+	v.SetFlash(message.Message{
+		Type: message.MessageTypeSuccess,
+		Body: "Your email has been verified! You are now logged in.",
+	})
+	c.Redirect(http.StatusSeeOther, "/")
 }
