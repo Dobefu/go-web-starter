@@ -177,6 +177,34 @@ func TestMaxLength(t *testing.T) {
 	assert.Empty(t, v.fieldErrors)
 }
 
+func TestValidEmail(t *testing.T) {
+	cases := []struct {
+		name     string
+		email    string
+		expected bool
+	}{
+		{"valid email", "test@example.com", true},
+		{"missing @", "testexample.com", false},
+		{"empty string", "", false},
+		{"spaces only", "   ", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v := New()
+			v.ValidEmail("email", tc.email)
+
+			if tc.expected {
+				assert.True(t, v.isValid)
+				assert.Empty(t, v.fieldErrors["email"])
+			} else {
+				assert.False(t, v.isValid)
+				assert.NotEmpty(t, v.fieldErrors["email"])
+			}
+		})
+	}
+}
+
 func TestPasswordsMatch(t *testing.T) {
 	v := New()
 	v.PasswordsMatch("field1", "pass", "bogus")
