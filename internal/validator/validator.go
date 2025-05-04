@@ -158,7 +158,13 @@ func (v *Validator) ValidateForm(r *http.Request) error {
 }
 
 func (v *Validator) GetFormValue(r *http.Request, field string) string {
-	return r.FormValue(field)
+	rawInput := r.PostFormValue(field)
+
+	safeInput := strings.ReplaceAll(rawInput, "\r", "")
+	safeInput = strings.ReplaceAll(safeInput, "\n", "")
+	safeInput = strings.ReplaceAll(safeInput, "\x00", "")
+
+	return safeInput
 }
 
 func (v *Validator) SetFlash(msg message.Message) {
