@@ -166,12 +166,18 @@ func (v *Validator) ValidateForm(r *http.Request) error {
 
 func (v *Validator) GetFormValue(r *http.Request, field string) string {
 	rawInput := r.FormValue(field)
+	var b strings.Builder
 
-	safeInput := strings.ReplaceAll(rawInput, "\r", "")
-	safeInput = strings.ReplaceAll(safeInput, "\n", "")
-	safeInput = strings.ReplaceAll(safeInput, "\x00", "")
+	// Strip out any control characters except for tabs and spaces.
+	for _, r := range rawInput {
+		if r < 32 && r != '\t' {
+			continue
+		}
 
-	return safeInput
+		b.WriteRune(r)
+	}
+
+	return b.String()
 }
 
 func (v *Validator) SetFlash(msg message.Message) {
