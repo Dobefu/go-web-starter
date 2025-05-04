@@ -158,7 +158,7 @@ func (v *Validator) ValidateForm(r *http.Request) error {
 }
 
 func (v *Validator) GetFormValue(r *http.Request, field string) string {
-	rawInput := r.PostFormValue(field)
+	rawInput := r.FormValue(field)
 
 	safeInput := strings.ReplaceAll(rawInput, "\r", "")
 	safeInput = strings.ReplaceAll(safeInput, "\n", "")
