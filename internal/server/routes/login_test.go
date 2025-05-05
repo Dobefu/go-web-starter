@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 	"unsafe"
 
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
@@ -86,6 +87,34 @@ func setUserPassword(u *user.User, hash string) {
 	passwordField.SetString(hash)
 }
 
+func setupTestRouterWithMocks(t *testing.T, useDBMiddleware bool) (router *gin.Engine, mock sqlmock.Sqlmock, mockDB *sql.DB) {
+	gin.SetMode(gin.TestMode)
+	router = gin.New()
+
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+
+	if useDBMiddleware {
+		router.Use(middleware.Database(mockDB))
+	}
+
+	router.SetFuncMap(server_utils.TemplateFuncMap())
+	_ = templates.LoadTemplates(router)
+
+	return
+}
+
+type mockSession struct {
+	sessions.Session
+	saveErr error
+}
+
+func (m *mockSession) Set(key any, val any) {}
+func (m *mockSession) Save() error          { return m.saveErr }
+
 func TestLoginPost(t *testing.T) {
 	type testCase struct {
 		name           string
@@ -97,6 +126,7 @@ func TestLoginPost(t *testing.T) {
 		expectStatus   int
 		expectLocation string
 		checkBody      func(*testing.T, *httptest.ResponseRecorder)
+		setupMock      func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase)
 	}
 
 	origFindByEmail := findByEmail
@@ -140,6 +170,10 @@ func TestLoginPost(t *testing.T) {
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/login",
+			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
+				hash, _ := bcrypt.GenerateFromPassword([]byte("notpw"), bcrypt.DefaultCost)
+				setUserPassword(&tc.foundUser.User, string(hash))
+			},
 		},
 		{
 			name:           "CheckPassword returns other error",
@@ -150,6 +184,11 @@ func TestLoginPost(t *testing.T) {
 			expectStatus:   http.StatusInternalServerError,
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.Contains(t, w.Body.String(), "Server Error")
+			},
+			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
+				tc.foundUser.checkPasswordFunc = func(string) error {
+					return errors.New("bcrypt fail")
+				}
 			},
 		},
 		{
@@ -162,6 +201,11 @@ func TestLoginPost(t *testing.T) {
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.Contains(t, w.Body.String(), "Server Error")
 			},
+			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
+				getSession = func(c *gin.Context) sessions.Session {
+					return &mockSession{saveErr: errors.New("session fail")}
+				}
+			},
 		},
 		{
 			name:           "success",
@@ -171,6 +215,15 @@ func TestLoginPost(t *testing.T) {
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/",
+			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
+				userVal := reflect.ValueOf(&tc.foundUser.User).Elem()
+				idField := userVal.FieldByName("id")
+				reflect.NewAt(idField.Type(), unsafe.Pointer(idField.UnsafeAddr())).Elem().SetInt(42)
+
+				mock.ExpectQuery(`UPDATE users SET username = \$1, email = \$2, password = \$3, status = \$4, updated_at = \$5, last_login = \$6 WHERE id = \$7 RETURNING updated_at`).
+					WithArgs("", "", sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg(), 42).
+					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(time.Now()))
+			},
 		},
 		{
 			name:           "inactive",
@@ -190,7 +243,6 @@ func TestLoginPost(t *testing.T) {
 			findUserErr:    nil,
 			expectStatus:   http.StatusSeeOther,
 			expectLocation: "/login",
-			checkBody:      nil,
 		},
 		{
 			name:           "db in context but wrong type",
@@ -201,14 +253,18 @@ func TestLoginPost(t *testing.T) {
 			checkBody: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.Contains(t, w.Body.String(), "Server Error")
 			},
+			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
+				router.Use(func(c *gin.Context) {
+					c.Set("db", 123)
+					c.Next()
+				})
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			useDB := tc.setDBInContext
-			router, _, mockDB, err := setupTestRouter(useDB)
-			assert.NoError(t, err)
+			router, mock, mockDB := setupTestRouterWithMocks(t, tc.setDBInContext)
 			defer func() { _ = mockDB.Close() }()
 
 			findByEmail = func(db database.DatabaseInterface, email string) (*user.User, error) {
@@ -219,19 +275,7 @@ func TestLoginPost(t *testing.T) {
 				return nil, tc.findUserErr
 			}
 
-			if tc.name == "session save error" {
-				getSession = func(c *gin.Context) sessions.Session {
-					return &mockSession{saveErr: errors.New("session fail")}
-				}
-			} else {
-				getSession = origGetSession
-			}
-
-			if tc.name == "CheckPassword returns non-ErrInvalidCredentials error" && tc.foundUser != nil {
-				tc.foundUser.checkPasswordFunc = func(string) error {
-					return errors.New("bcrypt fail")
-				}
-			}
+			getSession = origGetSession
 
 			w := httptest.NewRecorder()
 			var req *http.Request
@@ -244,25 +288,13 @@ func TestLoginPost(t *testing.T) {
 
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.name == "db in context but wrong type" {
-				router.Use(func(c *gin.Context) {
-					c.Set("db", 123)
-					c.Next()
-				})
-			}
-
-			if tc.hashPassword {
+			if tc.hashPassword && tc.foundUser != nil {
 				hash, _ := bcrypt.GenerateFromPassword([]byte("pw"), bcrypt.DefaultCost)
-				if tc.foundUser != nil {
-					setUserPassword(&tc.foundUser.User, string(hash))
-				}
+				setUserPassword(&tc.foundUser.User, string(hash))
 			}
 
-			if tc.name == "CheckPassword returns ErrInvalidCredentials" {
-				if tc.foundUser != nil {
-					hash, _ := bcrypt.GenerateFromPassword([]byte("notpw"), bcrypt.DefaultCost)
-					setUserPassword(&tc.foundUser.User, string(hash))
-				}
+			if tc.setupMock != nil {
+				tc.setupMock(router, mock, &tc)
 			}
 
 			router.POST("/login", LoginPost)
@@ -280,17 +312,4 @@ func TestLoginPost(t *testing.T) {
 			}
 		})
 	}
-}
-
-type mockSession struct {
-	sessions.Session
-	saveErr error
-}
-
-func (m *mockSession) Set(key interface{}, val interface{}) {
-	// Dummy implementation.
-}
-
-func (m *mockSession) Save() error {
-	return m.saveErr
 }

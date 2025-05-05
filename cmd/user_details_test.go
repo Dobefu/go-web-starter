@@ -18,7 +18,16 @@ import (
 
 func TestRunUserDetails_ID_Success(t *testing.T) {
 	findByID := func(db database.DatabaseInterface, id int) (*user.User, error) {
-		return user.New(42, "foo", "foo@bar.com", "", true, time.Now(), time.Now(), time.Now()), nil
+		return user.New(user.UserFields{
+			Id:        42,
+			Username:  "foo",
+			Email:     "foo@bar.com",
+			Password:  "",
+			Status:    true,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			LastLogin: time.Now(),
+		}), nil
 	}
 
 	findByEmail := func(db database.DatabaseInterface, email string) (*user.User, error) {
@@ -40,7 +49,16 @@ func TestRunUserDetails_Email_Success(t *testing.T) {
 	}
 
 	findByEmail := func(db database.DatabaseInterface, email string) (*user.User, error) {
-		return user.New(7, "bar", email, "", false, time.Now(), time.Now(), time.Now()), nil
+		return user.New(user.UserFields{
+			Id:        7,
+			Username:  "bar",
+			Email:     email,
+			Password:  "",
+			Status:    false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			LastLogin: time.Now(),
+		}), nil
 	}
 
 	log := logger.New(logger.InfoLevel, io.Discard)
@@ -90,7 +108,16 @@ func TestRunUserDetailsCmd_FlagID_Success(t *testing.T) {
 	}
 
 	findByID := func(db database.DatabaseInterface, id int) (*user.User, error) {
-		return user.New(1, "test", "test@x.com", "", true, time.Now(), time.Now(), time.Now()), nil
+		return user.New(user.UserFields{
+			Id:        1,
+			Username:  "test",
+			Email:     "test@example.com",
+			Password:  "",
+			Status:    true,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			LastLogin: time.Now(),
+		}), nil
 	}
 
 	findByEmail := func(db database.DatabaseInterface, email string) (*user.User, error) {
@@ -129,7 +156,16 @@ func TestRunUserDetailsCmd_FlagEmail_Success(t *testing.T) {
 	}
 
 	findByEmail := func(db database.DatabaseInterface, email string) (*user.User, error) {
-		return user.New(2, "em", email, "", true, time.Now(), time.Now(), time.Now()), nil
+		return user.New(user.UserFields{
+			Id:        2,
+			Username:  "em",
+			Email:     email,
+			Password:  "",
+			Status:    true,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			LastLogin: time.Now(),
+		}), nil
 	}
 
 	originalOsExit := osExit

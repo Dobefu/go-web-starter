@@ -38,6 +38,17 @@ type User struct {
 	lastLogin time.Time
 }
 
+type UserFields struct {
+	Id        int
+	Username  string
+	Email     string
+	Password  string
+	Status    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	LastLogin time.Time
+}
+
 func (user *User) GetID() (id int) {
 	return user.id
 }
@@ -269,16 +280,16 @@ func Create(db database.DatabaseInterface, username, email, plainPassword string
 	return CreateWithRepo(repo, username, email, plainPassword)
 }
 
-func New(id int, username, email, password string, status bool, createdAt, updatedAt, lastLogin time.Time) *User {
+func New(fields UserFields) *User {
 	return &User{
-		id:        id,
-		username:  username,
-		email:     email,
-		password:  password,
-		status:    status,
-		createdAt: createdAt,
-		updatedAt: updatedAt,
-		lastLogin: lastLogin,
+		id:        fields.Id,
+		username:  fields.Username,
+		email:     fields.Email,
+		password:  fields.Password,
+		status:    fields.Status,
+		createdAt: fields.CreatedAt,
+		updatedAt: fields.UpdatedAt,
+		lastLogin: fields.LastLogin,
 	}
 }
 
@@ -306,7 +317,11 @@ func (user *User) Login(db database.DatabaseInterface, session sessions.Session)
 	}
 
 	user.lastLogin = time.Now()
-	user.Save(db)
+	err = user.Save(db)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
