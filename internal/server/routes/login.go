@@ -111,7 +111,7 @@ func LoginPost(c *gin.Context) {
 	}
 
 	session := getSession(c)
-	err = foundUser.Login(session)
+	err = foundUser.Login(db, session)
 
 	if err != nil {
 		log.Error("Failed to save session after login", map[string]any{"email": email, "error": err.Error()})

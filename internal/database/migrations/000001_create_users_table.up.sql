@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users(
   status boolean NOT NULL,
   created_at timestamp without time zone NOT NULL DEFAULT NOW(),
   updated_at timestamp without time zone NOT NULL DEFAULT NOW(),
-  last_login timestamp without time zone
+  last_login timestamp without time zone NOT NULL
 );
 
 CREATE UNIQUE INDEX ON users(id, username, email);

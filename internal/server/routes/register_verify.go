@@ -97,7 +97,7 @@ func RegisterVerify(c *gin.Context) {
 	}
 
 	session := getSession(c)
-	err = usr.Login(session)
+	err = usr.Login(db, session)
 
 	if err != nil {
 		log.Error("Failed to save session after verification login", logger.Fields{"err": err.Error()})

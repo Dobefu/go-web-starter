@@ -70,7 +70,7 @@ func setupUserTests() User {
 	}
 }
 
-func TestUser_Getters_TableDriven(t *testing.T) {
+func TestUserGetters(t *testing.T) {
 	user := setupUserTests()
 	tests := []struct {
 		name   string
@@ -93,7 +93,7 @@ func TestUser_Getters_TableDriven(t *testing.T) {
 	}
 }
 
-func TestUser_Save_TableDriven(t *testing.T) {
+func TestUserSave(t *testing.T) {
 	tests := []struct {
 		name      string
 		mockSetup func(mock sqlmock.Sqlmock, user *User, now time.Time)
@@ -105,7 +105,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 0
 
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(sql.ErrConnDone)
 			},
 			wantErr: sql.ErrConnDone.Error(),
@@ -116,7 +116,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 0
 
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(nil, nil, nil).RowError(0, sql.ErrNoRows))
 			},
 			wantErr: sql.ErrNoRows.Error(),
@@ -127,8 +127,8 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 0
 
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg()).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(99, now, now))
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_login"}).AddRow(99, now, now, now))
 			},
 			wantErr: "",
 		},
@@ -138,7 +138,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 42
 
 				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), user.id).
 					WillReturnError(sql.ErrConnDone)
 			},
 			wantErr: sql.ErrConnDone.Error(),
@@ -149,7 +149,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 42
 
 				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), user.id).
 					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(nil).RowError(0, sql.ErrNoRows))
 			},
 			wantErr: sql.ErrNoRows.Error(),
@@ -160,7 +160,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 				user.id = 42
 
 				mock.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
-					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), user.id).
+					WithArgs(user.username, user.email, user.password, user.status, sqlmock.AnyArg(), sqlmock.AnyArg(), user.id).
 					WillReturnRows(sqlmock.NewRows([]string{"updated_at"}).AddRow(now))
 			},
 			wantErr: "",
@@ -203,7 +203,7 @@ func TestUser_Save_TableDriven(t *testing.T) {
 	}
 }
 
-func TestCheckPassword_TableDriven(t *testing.T) {
+func TestCheckPassword(t *testing.T) {
 	hashed, err := HashPassword("supersecret")
 	assert.NoError(t, err)
 
@@ -255,7 +255,7 @@ func TestCheckPassword_TableDriven(t *testing.T) {
 	}
 }
 
-func TestHashPassword_TableDriven(t *testing.T) {
+func TestHashPassword(t *testing.T) {
 	tests := []struct {
 		name   string
 		input  string
@@ -280,7 +280,7 @@ func TestHashPassword_TableDriven(t *testing.T) {
 	}
 }
 
-func TestNewUser_TableDriven(t *testing.T) {
+func TestNewUser(t *testing.T) {
 	tests := []struct {
 		name     string
 		username string
@@ -313,13 +313,13 @@ func setupMockDB(t *testing.T) (*mockDatabase, sqlmock.Sqlmock, func()) {
 	return &mockDatabase{db: db, mock: mock}, mock, cleanup
 }
 
-func userRow(id int, username, email, password string, status bool, createdAt, updatedAt time.Time) *sqlmock.Rows {
+func userRow(id int, username, email, password string, status bool, createdAt, updatedAt, lastLogin time.Time) *sqlmock.Rows {
 	return sqlmock.
-		NewRows([]string{"id", "username", "email", "password", "status", "created_at", "updated_at"}).
-		AddRow(id, username, email, password, status, createdAt, updatedAt)
+		NewRows([]string{"id", "username", "email", "password", "status", "created_at", "updated_at", "last_login"}).
+		AddRow(id, username, email, password, status, createdAt, updatedAt, lastLogin)
 }
 
-func TestFindByEmail_TableDriven(t *testing.T) {
+func TestFindByEmail(t *testing.T) {
 	tests := []struct {
 		name      string
 		mockSetup func(mock sqlmock.Sqlmock, now time.Time)
@@ -331,7 +331,7 @@ func TestFindByEmail_TableDriven(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock, now time.Time) {
 				mock.ExpectQuery(regexp.QuoteMeta(findUserByEmailQuery)).
 					WithArgs(testEmail).
-					WillReturnRows(userRow(testUserID, testUsername, testEmail, "hash", true, now, now))
+					WillReturnRows(userRow(testUserID, testUsername, testEmail, "hash", true, now, now, now))
 			},
 			expectErr: nil,
 			expectNil: false,
@@ -384,7 +384,7 @@ func TestFindByEmail_TableDriven(t *testing.T) {
 	}
 }
 
-func TestFindByID_TableDriven(t *testing.T) {
+func TestFindByID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -396,9 +396,9 @@ func TestFindByID_TableDriven(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(mock sqlmock.Sqlmock, now time.Time) {
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`)).
+				mock.ExpectQuery(regexp.QuoteMeta(findUserByIDQuery)).
 					WithArgs(testUserID).
-					WillReturnRows(userRow(testUserID, testUsername, testEmail, "hash", true, now, now))
+					WillReturnRows(userRow(testUserID, testUsername, testEmail, "hash", true, now, now, now))
 			},
 			expectErr: "",
 			expectNil: false,
@@ -406,7 +406,7 @@ func TestFindByID_TableDriven(t *testing.T) {
 		{
 			name: "not found",
 			mockSetup: func(mock sqlmock.Sqlmock, now time.Time) {
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`)).
+				mock.ExpectQuery(regexp.QuoteMeta(findUserByIDQuery)).
 					WithArgs(testUserID).
 					WillReturnError(sql.ErrNoRows)
 			},
@@ -416,7 +416,7 @@ func TestFindByID_TableDriven(t *testing.T) {
 		{
 			name: "db error",
 			mockSetup: func(mock sqlmock.Sqlmock, now time.Time) {
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`)).
+				mock.ExpectQuery(regexp.QuoteMeta(findUserByIDQuery)).
 					WithArgs(testUserID).
 					WillReturnError(sql.ErrConnDone)
 			},
@@ -451,7 +451,7 @@ func TestFindByID_TableDriven(t *testing.T) {
 	}
 }
 
-func TestCreate_TableDriven(t *testing.T) {
+func TestCreate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -470,8 +470,8 @@ func TestCreate_TableDriven(t *testing.T) {
 			},
 			saveSetup: func(mock sqlmock.Sqlmock, now time.Time) {
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-					WithArgs("newuser", "new@user.com", sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg()).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(123, now, now))
+					WithArgs("newuser", "new@user.com", sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at", "last_login"}).AddRow(123, now, now, now))
 			},
 			expectErr: "",
 			expectNil: false,
@@ -482,7 +482,7 @@ func TestCreate_TableDriven(t *testing.T) {
 				now := time.Now()
 				mock.ExpectQuery(regexp.QuoteMeta(findUserByEmailQuery)).
 					WithArgs("exists@user.com").
-					WillReturnRows(userRow(1, "exists", "exists@user.com", "hash", true, now, now))
+					WillReturnRows(userRow(1, "exists", "exists@user.com", "hash", true, now, now, now))
 			},
 			saveSetup: nil,
 			expectErr: "already exists",
@@ -508,7 +508,7 @@ func TestCreate_TableDriven(t *testing.T) {
 			},
 			saveSetup: func(mock sqlmock.Sqlmock, now time.Time) {
 				mock.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
-					WithArgs("savefail", "savefail@user.com", sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg()).
+					WithArgs("savefail", "savefail@user.com", sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnError(sql.ErrConnDone)
 			},
 			expectErr: "failed to save new user",

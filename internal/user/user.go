@@ -20,11 +20,11 @@ var (
 )
 
 const (
-	insertUserQuery         = `INSERT INTO users (username, email, password, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at, updated_at`
-	findUserByEmailQuery    = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE email = $1`
-	findUserByUsernameQuery = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE username = $1`
-	findUserByIDQuery       = `SELECT id, username, email, password, status, created_at, updated_at FROM users WHERE id = $1`
-	updateUserQuery         = `UPDATE users SET username = $1, email = $2, password = $3, status = $4, updated_at = $5 WHERE id = $6 RETURNING updated_at`
+	insertUserQuery         = `INSERT INTO users (username, email, password, status, created_at, updated_at, last_login) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, last_login`
+	findUserByEmailQuery    = `SELECT id, username, email, password, status, created_at, updated_at, last_login FROM users WHERE email = $1`
+	findUserByUsernameQuery = `SELECT id, username, email, password, status, created_at, updated_at, last_login FROM users WHERE username = $1`
+	findUserByIDQuery       = `SELECT id, username, email, password, status, created_at, updated_at, last_login FROM users WHERE id = $1`
+	updateUserQuery         = `UPDATE users SET username = $1, email = $2, password = $3, status = $4, updated_at = $5, last_login = $6 WHERE id = $7 RETURNING updated_at`
 )
 
 type User struct {
@@ -35,6 +35,7 @@ type User struct {
 	status    bool
 	createdAt time.Time
 	updatedAt time.Time
+	lastLogin time.Time
 }
 
 func (user *User) GetID() (id int) {
@@ -65,6 +66,10 @@ func (user *User) GetUpdatedAt() (updatedAt time.Time) {
 	return user.updatedAt
 }
 
+func (user *User) GetLastLogin() (lastLogin time.Time) {
+	return user.lastLogin
+}
+
 func (user *User) CheckPassword(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(user.password), []byte(password))
 
@@ -88,9 +93,10 @@ func (user *User) Save(db database.DatabaseInterface) (err error) {
 			user.status,
 			time.Now(),
 			time.Now(),
+			time.UnixMicro(0),
 		)
 
-		err = row.Scan(&user.id, &user.createdAt, &user.updatedAt)
+		err = row.Scan(&user.id, &user.createdAt, &user.updatedAt, &user.lastLogin)
 
 		if err != nil {
 			return err
@@ -105,6 +111,7 @@ func (user *User) Save(db database.DatabaseInterface) (err error) {
 		user.password,
 		user.status,
 		time.Now(),
+		user.lastLogin,
 		user.id,
 	)
 
@@ -131,6 +138,7 @@ func FindByEmail(db database.DatabaseInterface, email string) (*User, error) {
 		&user.status,
 		&user.createdAt,
 		&user.updatedAt,
+		&user.lastLogin,
 	)
 
 	if err != nil {
@@ -156,6 +164,7 @@ func FindByUsername(db database.DatabaseInterface, username string) (*User, erro
 		&user.status,
 		&user.createdAt,
 		&user.updatedAt,
+		&user.lastLogin,
 	)
 
 	if err != nil {
@@ -181,6 +190,7 @@ func FindByID(db database.DatabaseInterface, id int) (*User, error) {
 		&user.status,
 		&user.createdAt,
 		&user.updatedAt,
+		&user.lastLogin,
 	)
 
 	if err != nil {
@@ -196,9 +206,11 @@ func FindByID(db database.DatabaseInterface, id int) (*User, error) {
 
 func HashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
+
 	return string(hashedBytes), nil
 }
 
@@ -257,7 +269,7 @@ func Create(db database.DatabaseInterface, username, email, plainPassword string
 	return CreateWithRepo(repo, username, email, plainPassword)
 }
 
-func New(id int, username, email, password string, status bool, createdAt, updatedAt time.Time) *User {
+func New(id int, username, email, password string, status bool, createdAt, updatedAt, lastLogin time.Time) *User {
 	return &User{
 		id:        id,
 		username:  username,
@@ -266,30 +278,35 @@ func New(id int, username, email, password string, status bool, createdAt, updat
 		status:    status,
 		createdAt: createdAt,
 		updatedAt: updatedAt,
+		lastLogin: lastLogin,
 	}
 }
 
 func (user *User) CreateVerificationToken() string {
 	data := fmt.Sprintf(
-		"%d:%s:%d:%s:%t",
-		user.GetUpdatedAt().UnixNano(),
-		user.GetEmail(),
-		user.GetID(),
+		"%d:%s:%d:%s:%t:%s",
+		user.updatedAt.UnixNano(),
+		user.email,
+		user.id,
 		user.password,
 		user.status,
+		user.lastLogin,
 	)
 
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
 
-func (user *User) Login(session sessions.Session) (err error) {
-	session.Set("userID", user.GetID())
+func (user *User) Login(db database.DatabaseInterface, session sessions.Session) (err error) {
+	session.Set("userID", user.id)
 	err = session.Save()
 
 	if err != nil {
 		return err
 	}
+
+	user.lastLogin = time.Now()
+	user.Save(db)
 
 	return nil
 }
