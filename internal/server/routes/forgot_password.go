@@ -68,8 +68,7 @@ func ForgotPassword(c *gin.Context) {
 		}
 
 		session := getSession(c)
-		session.Set("userID", usr.GetID())
-		err = session.Save()
+		err = usr.Login(session)
 
 		if err != nil {
 			log.Error("Failed to save session after verification login", logger.Fields{"err": err.Error()})

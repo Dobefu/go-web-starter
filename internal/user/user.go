@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 
 	"github.com/Dobefu/go-web-starter/internal/database"
+	"github.com/gin-contrib/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -280,4 +281,15 @@ func (user *User) CreateVerificationToken() string {
 
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
+}
+
+func (user *User) Login(session sessions.Session) (err error) {
+	session.Set("userID", user.GetID())
+	err = session.Save()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
