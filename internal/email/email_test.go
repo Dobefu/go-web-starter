@@ -15,12 +15,12 @@ func TestNewEmail(t *testing.T) {
 }
 
 func TestEmailSuccess(t *testing.T) {
-	origSendMail := smtpSendMail
-	smtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	origSendMail := SmtpSendMail
+	SmtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
 		return nil
 	}
 
-	defer func() { smtpSendMail = origSendMail }()
+	defer func() { SmtpSendMail = origSendMail }()
 
 	email := New("", "", "", "", "")
 	body := EmailBody{Template: "email/test_email", Data: nil}
@@ -30,12 +30,12 @@ func TestEmailSuccess(t *testing.T) {
 }
 
 func TestEmailErrTemplate(t *testing.T) {
-	origSendMail := smtpSendMail
-	smtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	origSendMail := SmtpSendMail
+	SmtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
 		return nil
 	}
 
-	defer func() { smtpSendMail = origSendMail }()
+	defer func() { SmtpSendMail = origSendMail }()
 
 	email := New("", "", "", "", "")
 	body := EmailBody{Template: "", Data: nil}
@@ -45,12 +45,12 @@ func TestEmailErrTemplate(t *testing.T) {
 }
 
 func TestEmailErrSMTP(t *testing.T) {
-	origSendMail := smtpSendMail
-	smtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	origSendMail := SmtpSendMail
+	SmtpSendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
 		return errors.New("smtp fail")
 	}
 
-	defer func() { smtpSendMail = origSendMail }()
+	defer func() { SmtpSendMail = origSendMail }()
 
 	email := New("", "", "", "", "")
 	body := EmailBody{Template: "email/test_email", Data: nil}

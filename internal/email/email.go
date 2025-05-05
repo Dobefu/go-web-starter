@@ -22,7 +22,7 @@ type EmailBody struct {
 	Data     map[string]any
 }
 
-var smtpSendMail = smtp.SendMail
+var SmtpSendMail = smtp.SendMail
 
 func New(host, port, identity, username, password string) *Email {
 	return &Email{
@@ -70,5 +70,5 @@ func (email *Email) SendMail(
 		fmt.Sprintf("--%s--", boundary),
 	}, "\r\n")
 
-	return smtpSendMail(email.addr, email.auth, from, to, []byte(msg))
+	return SmtpSendMail(email.addr, email.auth, from, to, []byte(msg))
 }
