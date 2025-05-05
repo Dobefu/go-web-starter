@@ -77,7 +77,16 @@ func AccountEditPost(c *gin.Context) {
 	}
 
 	if v.HasErrors() {
-		redirectToAccountEditWithError(c, v, username, "Please correct the errors below")
+		route_utils.RedirectWithError(
+			c,
+			v,
+			map[string]string{
+				"username": username,
+			},
+			"Please correct the errors below",
+			"/account/edit",
+		)
+
 		return
 	}
 
@@ -97,14 +106,4 @@ func AccountEditPost(c *gin.Context) {
 	})
 
 	c.Redirect(http.StatusSeeOther, "/account")
-}
-
-func redirectToAccountEditWithError(c *gin.Context, v *validator.Validator, username string, flashMsg string) {
-	v.SetFormData(map[string]string{
-		"username": username,
-	})
-
-	v.SetErrors()
-	v.SetFlash(message.Message{Body: flashMsg})
-	c.Redirect(http.StatusSeeOther, "/account/edit")
 }

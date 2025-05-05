@@ -94,7 +94,16 @@ func RegisterPost(c *gin.Context) {
 	}
 
 	if v.HasErrors() {
-		redirectToRegisterWithError(c, v, username, email, "Please correct the errors below")
+		route_utils.RedirectWithError(
+			c,
+			v,
+			map[string]string{
+				"username": username,
+				"email":    email,
+			},
+			"Please correct the errors below",
+			"/register",
+		)
 		return
 	}
 
@@ -154,15 +163,4 @@ func RegisterPost(c *gin.Context) {
 	})
 
 	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/register/verify?email=%s", email))
-}
-
-func redirectToRegisterWithError(c *gin.Context, v *validator.Validator, username string, email string, flashMsg string) {
-	v.SetFormData(map[string]string{
-		"username": username,
-		"email":    email,
-	})
-
-	v.SetErrors()
-	v.SetFlash(message.Message{Body: flashMsg})
-	c.Redirect(http.StatusSeeOther, "/register")
 }

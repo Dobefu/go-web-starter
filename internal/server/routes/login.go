@@ -59,7 +59,15 @@ func LoginPost(c *gin.Context) {
 	v.Required("password", password)
 
 	if v.HasErrors() {
-		redirectToLoginWithError(c, v, email, "Please correct the errors below")
+		route_utils.RedirectWithError(
+			c,
+			v,
+			map[string]string{
+				"email": email,
+			},
+			"Please correct the errors below",
+			"/login",
+		)
 		return
 	}
 
@@ -79,7 +87,15 @@ func LoginPost(c *gin.Context) {
 			v.AddFieldError("email", user.ErrInvalidCredentials.Error())
 
 			log.Warn("Login failed: invalid credentials (email not found)", map[string]any{"email": email})
-			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
+			route_utils.RedirectWithError(
+				c,
+				v,
+				map[string]string{
+					"email": email,
+				},
+				user.ErrInvalidCredentials.Error(),
+				"/login",
+			)
 		} else {
 			log.Error("Database error during login", map[string]any{"email": email, "error": err.Error()})
 			RenderRouteHTML(c, GenericErrorData(c))
@@ -95,7 +111,15 @@ func LoginPost(c *gin.Context) {
 			v.AddFieldError("email", user.ErrInvalidCredentials.Error())
 
 			log.Warn("Login failed: invalid credentials (password mismatch)", map[string]any{"email": email})
-			redirectToLoginWithError(c, v, email, user.ErrInvalidCredentials.Error())
+			route_utils.RedirectWithError(
+				c,
+				v,
+				map[string]string{
+					"email": email,
+				},
+				user.ErrInvalidCredentials.Error(),
+				"/login",
+			)
 		} else {
 			log.Error("Password check error during login", map[string]any{"email": email, "error": err.Error()})
 			RenderRouteHTML(c, GenericErrorData(c))
@@ -106,7 +130,15 @@ func LoginPost(c *gin.Context) {
 
 	if !foundUser.GetStatus() {
 		log.Warn("An inactive user tried to log in", logger.Fields{"mail": email})
-		redirectToLoginWithError(c, v, email, user.ErrNotActive.Error())
+		route_utils.RedirectWithError(
+			c,
+			v,
+			map[string]string{
+				"email": email,
+			},
+			user.ErrNotActive.Error(),
+			"/login",
+		)
 		return
 	}
 
@@ -127,14 +159,4 @@ func LoginPost(c *gin.Context) {
 
 	v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: "Successfully logged in!"})
 	c.Redirect(http.StatusSeeOther, "/")
-}
-
-func redirectToLoginWithError(c *gin.Context, v *validator.Validator, email string, flashMsg string) {
-	v.SetFormData(map[string]string{
-		"email": email,
-	})
-
-	v.SetErrors()
-	v.SetFlash(message.Message{Body: flashMsg})
-	c.Redirect(http.StatusSeeOther, "/login")
 }
