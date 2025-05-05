@@ -3,6 +3,14 @@
 
   {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
 
+  {{- template "components/molecules/tabs" dict
+    "Href" .Href
+    "Tabs" (slice
+    (dict "Text" "My Account" "Href" "/account")
+    (dict "Text" "Edit" "Href" "/account/edit")
+    )
+  -}}
+
 
   <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
     <section class="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm">

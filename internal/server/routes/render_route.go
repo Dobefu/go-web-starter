@@ -3,69 +3,18 @@ package routes
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/Dobefu/go-web-starter/internal/config"
-	"github.com/Dobefu/go-web-starter/internal/database"
-	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
+	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/templates"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
-
-var userFindByID = user.FindByID
-
-func getCurrentUser(c *gin.Context) *user.User {
-	session := sessions.Default(c)
-	userID := session.Get("userID")
-
-	if userID == nil {
-		return nil
-	}
-
-	dbVal, exists := c.Get("db")
-
-	if !exists {
-		return nil
-	}
-
-	db, ok := dbVal.(database.DatabaseInterface)
-
-	if !ok {
-		return nil
-	}
-
-	id, ok := userID.(int)
-
-	if !ok {
-		return nil
-	}
-
-	currentUser, err := userFindByID(db, id)
-
-	if err != nil {
-		log := logger.New(config.GetLogLevel(), os.Stdout)
-
-		log.Error("getCurrentUser: failed to load user", logger.Fields{
-			"id":    id,
-			"error": err.Error(),
-		})
-
-		session := sessions.Default(c)
-		session.Clear()
-		_ = session.Save()
-
-		return nil
-	}
-
-	return currentUser
-}
 
 func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 	v := validator.New()
@@ -78,7 +27,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		canonical = strings.TrimRight(canonical, "/")
 	}
 
-	currentUser := getCurrentUser(c)
+	currentUser := route_utils.GetUserFromSession(c)
 
 	data := struct {
 		RouteData
@@ -87,6 +36,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		Nonce     string
 		BuildHash string
 		Canonical string
+		Href      string
 		Messages  []message.Message
 		User      *user.User
 	}{
@@ -96,6 +46,7 @@ func RenderRouteHTML(c *gin.Context, routeData RouteData) {
 		Nonce:     c.GetString("nonce"),
 		BuildHash: config.BuildHash,
 		Canonical: canonical,
+		Href:      c.Request.URL.Path,
 		Messages:  v.GetMessages(),
 		User:      currentUser,
 	}

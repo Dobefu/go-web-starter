@@ -82,7 +82,7 @@ func ForgotPassword(c *gin.Context) {
 			Body: "You have used your one-time login token. Please change your password.",
 		})
 
-		c.Redirect(http.StatusSeeOther, "/account")
+		c.Redirect(http.StatusSeeOther, "/account/edit")
 		return
 	}
 

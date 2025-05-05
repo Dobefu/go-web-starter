@@ -25,4 +25,5 @@ func RegisterRoutes(router gin.IRouter) {
 	authOnly.Use(middleware.AuthOnly())
 	authOnly.GET("/logout", Logout)
 	authOnly.GET("/account", Account)
+	authOnly.GET("/account/edit", AccountEdit)
 }
