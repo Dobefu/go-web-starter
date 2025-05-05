@@ -1,0 +1,16 @@
+{{- define "components/molecules/tabs" -}}
+  {{- $href := .Href -}}
+
+
+  <div class="flex flex-wrap gap-4">
+    {{- range $tab := .Tabs -}}
+      <a
+        class="rounded-full border border-transparent px-4 py-2 data-current:border-zinc-200 data-current:bg-white data-current:shadow"
+        href="{{ $tab.Href }}"
+        {{- if eq $tab.Href $href -}}data-current{{- end -}}
+      >
+        {{- $tab.Text -}}
+      </a>
+    {{ end }}
+  </div>
+{{- end -}}
