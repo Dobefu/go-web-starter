@@ -15,6 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	pathLogin = "/login"
+)
+
 func Login(c *gin.Context) {
 	v := validator.New()
 	v.SetContext(c)
@@ -66,7 +70,7 @@ func LoginPost(c *gin.Context) {
 				"email": email,
 			},
 			"Please correct the errors below",
-			"/login",
+			pathLogin,
 		)
 		return
 	}
@@ -94,7 +98,7 @@ func LoginPost(c *gin.Context) {
 					"email": email,
 				},
 				user.ErrInvalidCredentials.Error(),
-				"/login",
+				pathLogin,
 			)
 		} else {
 			log.Error("Database error during login", map[string]any{"email": email, "error": err.Error()})
@@ -118,7 +122,7 @@ func LoginPost(c *gin.Context) {
 					"email": email,
 				},
 				user.ErrInvalidCredentials.Error(),
-				"/login",
+				pathLogin,
 			)
 		} else {
 			log.Error("Password check error during login", map[string]any{"email": email, "error": err.Error()})
@@ -137,7 +141,7 @@ func LoginPost(c *gin.Context) {
 				"email": email,
 			},
 			user.ErrNotActive.Error(),
-			"/login",
+			pathLogin,
 		)
 		return
 	}
