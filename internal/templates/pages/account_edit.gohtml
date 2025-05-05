@@ -20,19 +20,19 @@
     <input type="hidden" name="_csrf" value="{{ .CSRFToken }}" />
 
     <div class="flex flex-col gap-2">
-      <label class="required" for="email">Email address</label>
+      <label class="required" for="username">Username</label>
       <input
         autofocus
-        id="email"
-        name="email"
+        id="username"
+        name="username"
         required
-        type="email"
-        value="{{ .FormData.Values.email }}"
+        type="text"
+        value="{{ .FormData.Values.username }}"
       />
 
-      {{- if .FormData.Errors.email -}}
+      {{- if .FormData.Errors.username -}}
         <div class="text-sm text-red-500">
-          {{ index .FormData.Errors.email 0 }}
+          {{ index .FormData.Errors.username 0 }}
         </div>
       {{- end -}}
     </div>

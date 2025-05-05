@@ -137,6 +137,7 @@ func (v *Validator) Required(field, value string) {
 }
 
 func (v *Validator) MinLength(field, value string, min int) {
+	fmt.Println(field, value, min)
 	v.CheckField(len(strings.TrimSpace(value)) >= min, field, fmt.Sprintf(msgMinLength, min))
 }
 

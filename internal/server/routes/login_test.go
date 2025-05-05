@@ -34,6 +34,15 @@ func setupTestRouter(useDBMiddleware bool) (*gin.Engine, sqlmock.Sqlmock, *sql.D
 
 	mockDB, mockSQL, err := sqlmock.New()
 
+	now := time.Now()
+	mockSQL.ExpectQuery(`SELECT (id, username, email, password, status, created_at, updated_at, last_login) FROM users .+`).
+		WillReturnRows(
+			sqlmock.NewRows(
+				[]string{"id", "username", "email", "password", "status", "created_at", "updated_at", "last_login"},
+			).
+				AddRow(1, "username", "test@example.com", "hash", true, now, now, now),
+		)
+
 	if err != nil {
 		return nil, nil, nil, err
 	}

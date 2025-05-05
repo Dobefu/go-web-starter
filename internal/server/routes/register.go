@@ -63,8 +63,12 @@ func RegisterPost(c *gin.Context) {
 
 	v.ValidEmail("email", email)
 	v.Required("email", email)
+
 	v.Required("username", username)
+	v.MinLength("username", username, 3)
+
 	v.Required("password", password)
+	v.MinLength("password", password, 8)
 	v.Required("password_confirm", passwordConfirm)
 	v.PasswordsMatch("password", password, passwordConfirm)
 

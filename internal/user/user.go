@@ -57,6 +57,10 @@ func (user *User) GetUsername() (username string) {
 	return user.username
 }
 
+func (user *User) SetUsername(username string) {
+	user.username = username
+}
+
 func (user *User) GetEmail() (email string) {
 	return user.email
 }
