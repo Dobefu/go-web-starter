@@ -9,14 +9,11 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	pathLogin = "/login"
 )
 
 func Login(c *gin.Context) {
@@ -70,7 +67,7 @@ func LoginPost(c *gin.Context) {
 				"email": email,
 			},
 			"Please correct the errors below",
-			pathLogin,
+			paths.PathLogin,
 		)
 		return
 	}
@@ -98,7 +95,7 @@ func LoginPost(c *gin.Context) {
 					"email": email,
 				},
 				user.ErrInvalidCredentials.Error(),
-				pathLogin,
+				paths.PathLogin,
 			)
 		} else {
 			log.Error("Database error during login", map[string]any{"email": email, "error": err.Error()})
@@ -122,7 +119,7 @@ func LoginPost(c *gin.Context) {
 					"email": email,
 				},
 				user.ErrInvalidCredentials.Error(),
-				pathLogin,
+				paths.PathLogin,
 			)
 		} else {
 			log.Error("Password check error during login", map[string]any{"email": email, "error": err.Error()})
@@ -141,7 +138,7 @@ func LoginPost(c *gin.Context) {
 				"email": email,
 			},
 			user.ErrNotActive.Error(),
-			pathLogin,
+			paths.PathLogin,
 		)
 		return
 	}

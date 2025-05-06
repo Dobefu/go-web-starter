@@ -10,6 +10,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
@@ -51,7 +52,7 @@ func ForgotPassword(c *gin.Context) {
 				Body: errUserPasswdVerify,
 			})
 
-			c.Redirect(http.StatusSeeOther, routeRegister)
+			c.Redirect(http.StatusSeeOther, paths.PathRegister)
 			return
 		}
 
@@ -63,7 +64,7 @@ func ForgotPassword(c *gin.Context) {
 				Body: errUserPasswdVerify,
 			})
 
-			c.Redirect(http.StatusSeeOther, routeRegister)
+			c.Redirect(http.StatusSeeOther, paths.PathRegister)
 			return
 		}
 
@@ -82,7 +83,7 @@ func ForgotPassword(c *gin.Context) {
 			Body: "You have used your one-time login token. Please change your password.",
 		})
 
-		c.Redirect(http.StatusSeeOther, "/account/edit")
+		c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/edit", paths.PathAccount))
 		return
 	}
 
@@ -130,7 +131,7 @@ func ForgotPasswordPost(c *gin.Context) {
 
 		v.SetErrors()
 		v.SetFlash(message.Message{Body: "Please correct the errors below"})
-		c.Redirect(http.StatusSeeOther, "/forgot-password")
+		c.Redirect(http.StatusSeeOther, paths.PathForgotPassword)
 
 		return
 	}
@@ -148,7 +149,7 @@ func ForgotPasswordPost(c *gin.Context) {
 
 	if err != nil || !foundUser.GetStatus() {
 		v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: msgPasswdReset})
-		c.Redirect(http.StatusSeeOther, "/login")
+		c.Redirect(http.StatusSeeOther, paths.PathLogin)
 
 		return
 	}
@@ -190,5 +191,5 @@ func ForgotPasswordPost(c *gin.Context) {
 	}
 
 	v.SetFlash(message.Message{Type: message.MessageTypeSuccess, Body: msgPasswdReset})
-	c.Redirect(http.StatusSeeOther, "/login")
+	c.Redirect(http.StatusSeeOther, paths.PathLogin)
 }

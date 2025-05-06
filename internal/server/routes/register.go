@@ -10,6 +10,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
@@ -102,7 +103,7 @@ func RegisterPost(c *gin.Context) {
 				"email":    email,
 			},
 			"Please correct the errors below",
-			"/register",
+			paths.PathRegister,
 		)
 		return
 	}
@@ -162,5 +163,5 @@ func RegisterPost(c *gin.Context) {
 		Body: "Your account has been created! Please check you inbox for further instructions.",
 	})
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/register/verify?email=%s", email))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/verify?email=%s", paths.PathRegister, email))
 }

@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +13,7 @@ func AuthOnly() gin.HandlerFunc {
 		session := sessions.Default(c)
 
 		if session.Get("userID") == nil {
-			c.Redirect(http.StatusSeeOther, "/login")
+			c.Redirect(http.StatusSeeOther, paths.PathLogin)
 			c.Abort()
 
 			return

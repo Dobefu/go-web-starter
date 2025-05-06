@@ -7,6 +7,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/config"
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/Dobefu/go-web-starter/internal/validator"
@@ -15,8 +16,6 @@ import (
 
 const (
 	errUserAccountVerify = "Could not verify the user account."
-
-	routeRegister = "/register"
 )
 
 func RegisterVerify(c *gin.Context) {
@@ -30,7 +29,7 @@ func RegisterVerify(c *gin.Context) {
 	// If the route was visited without an email address,
 	// redirect to the registration page.
 	if len(email) <= 0 {
-		c.Redirect(http.StatusSeeOther, routeRegister)
+		c.Redirect(http.StatusSeeOther, paths.PathRegister)
 		return
 	}
 
@@ -70,7 +69,7 @@ func RegisterVerify(c *gin.Context) {
 			Body: errUserAccountVerify,
 		})
 
-		c.Redirect(http.StatusSeeOther, routeRegister)
+		c.Redirect(http.StatusSeeOther, paths.PathRegister)
 		return
 	}
 
@@ -82,7 +81,7 @@ func RegisterVerify(c *gin.Context) {
 			Body: errUserAccountVerify,
 		})
 
-		c.Redirect(http.StatusSeeOther, routeRegister)
+		c.Redirect(http.StatusSeeOther, paths.PathRegister)
 		return
 	}
 

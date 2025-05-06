@@ -1,7 +1,10 @@
 package routes
 
 import (
+	"fmt"
+
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,20 +14,27 @@ func RegisterRoutes(router gin.IRouter) {
 
 	router.GET("/robots.txt", RobotsTxt)
 
-	anonOnly := router.Group("/")
-	anonOnly.Use(middleware.AnonOnly())
-	anonOnly.GET("/login", Login)
-	anonOnly.POST("/login", LoginPost)
-	anonOnly.GET("/register", Register)
-	anonOnly.POST("/register", RegisterPost)
-	anonOnly.GET("/register/verify", RegisterVerify)
-	anonOnly.GET("/forgot-password", ForgotPassword)
-	anonOnly.POST("/forgot-password", ForgotPasswordPost)
+	RegisterAnonOnlyRoutes(router.Group("/"))
+	RegisterAuthOnlyRoutes(router.Group("/"))
+}
 
-	authOnly := router.Group("/")
-	authOnly.Use(middleware.AuthOnly())
-	authOnly.GET("/logout", Logout)
-	authOnly.GET("/account", Account)
-	authOnly.GET("/account/edit", AccountEdit)
-	authOnly.POST("/account/edit", AccountEditPost)
+func RegisterAnonOnlyRoutes(rg *gin.RouterGroup) {
+	rg.Use(middleware.AnonOnly())
+
+	rg.GET(paths.PathLogin, Login)
+	rg.POST(paths.PathLogin, LoginPost)
+	rg.GET(paths.PathRegister, Register)
+	rg.POST(paths.PathRegister, RegisterPost)
+	rg.GET(fmt.Sprintf("%s/verify", paths.PathRegister), RegisterVerify)
+	rg.GET(paths.PathForgotPassword, ForgotPassword)
+	rg.POST(paths.PathForgotPassword, ForgotPasswordPost)
+}
+
+func RegisterAuthOnlyRoutes(rg *gin.RouterGroup) {
+	rg.Use(middleware.AuthOnly())
+
+	rg.GET(paths.PathLogout, Logout)
+	rg.GET(paths.PathAccount, Account)
+	rg.GET(fmt.Sprintf("%s/edit", paths.PathAccount), AccountEdit)
+	rg.POST(fmt.Sprintf("%s/edit", paths.PathAccount), AccountEditPost)
 }

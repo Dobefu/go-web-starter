@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/Dobefu/go-web-starter/internal/logger"
 	"github.com/Dobefu/go-web-starter/internal/message"
 	"github.com/Dobefu/go-web-starter/internal/server/middleware"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	route_utils "github.com/Dobefu/go-web-starter/internal/server/routes/utils"
 	"github.com/Dobefu/go-web-starter/internal/validator"
 	"github.com/gin-gonic/gin"
@@ -84,7 +86,7 @@ func AccountEditPost(c *gin.Context) {
 				"username": username,
 			},
 			"Please correct the errors below",
-			"/account/edit",
+			fmt.Sprintf("%s/edit", paths.PathAccount),
 		)
 
 		return
@@ -105,5 +107,5 @@ func AccountEditPost(c *gin.Context) {
 		Body: "Your profile has been updated successfully!",
 	})
 
-	c.Redirect(http.StatusSeeOther, "/account")
+	c.Redirect(http.StatusSeeOther, paths.PathAccount)
 }

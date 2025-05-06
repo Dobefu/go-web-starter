@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dobefu/go-web-starter/internal/database"
 	email "github.com/Dobefu/go-web-starter/internal/email"
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	"github.com/Dobefu/go-web-starter/internal/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -29,7 +31,7 @@ func setupRouter(db database.DatabaseInterface) *gin.Engine {
 
 	router.Use(sessions.Sessions("mysession", store))
 
-	router.POST("/register", func(c *gin.Context) {
+	router.POST(paths.PathRegister, func(c *gin.Context) {
 		c.Set("db", db)
 		RegisterPost(c)
 	})
@@ -72,7 +74,7 @@ func makeForm(fields map[string]string) url.Values {
 
 func makeRequest(router *gin.Engine, form url.Values) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/register", strings.NewReader(form.Encode()))
+	req, _ := http.NewRequest("POST", paths.PathRegister, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	router.ServeHTTP(w, req)
@@ -138,7 +140,7 @@ func TestRegisterPost(t *testing.T) {
 			findByEmail:    defaultFind,
 			mockSuccessDB:  true,
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/register/verify?email=test@example.com",
+			expectLocation: fmt.Sprintf("%s/verify?email=test@example.com", paths.PathRegister),
 		},
 	}
 

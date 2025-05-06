@@ -10,6 +10,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	server_utils "github.com/Dobefu/go-web-starter/internal/server/utils"
 	"github.com/Dobefu/go-web-starter/internal/templates"
 
@@ -65,10 +66,10 @@ func TestLoginGET(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = mockDB.Close() }()
 
-	router.GET("/login", Login)
+	router.GET(paths.PathLogin, Login)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/login", nil)
+	req, _ := http.NewRequest("GET", paths.PathLogin, nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -151,7 +152,7 @@ func TestLoginPost(t *testing.T) {
 			name:           "missing form fields",
 			form:           url.Values{},
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/login",
+			expectLocation: paths.PathLogin,
 		},
 		{
 			name:           "FindByEmail returns ErrInvalidCredentials",
@@ -159,7 +160,7 @@ func TestLoginPost(t *testing.T) {
 			setDBInContext: true,
 			findUserErr:    user.ErrInvalidCredentials,
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/login",
+			expectLocation: paths.PathLogin,
 		},
 		{
 			name:           "FindByEmail returns DB error",
@@ -178,7 +179,7 @@ func TestLoginPost(t *testing.T) {
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/login",
+			expectLocation: paths.PathLogin,
 			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
 				hash, _ := bcrypt.GenerateFromPassword([]byte("notpw"), bcrypt.DefaultCost)
 				setUserPassword(&tc.foundUser.User, string(hash))
@@ -241,7 +242,7 @@ func TestLoginPost(t *testing.T) {
 			setDBInContext: true,
 			foundUser:      &mockUser{},
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/login",
+			expectLocation: paths.PathLogin,
 		},
 		{
 			name:           "ValidateForm error",
@@ -251,7 +252,7 @@ func TestLoginPost(t *testing.T) {
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			findUserErr:    nil,
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/login",
+			expectLocation: paths.PathLogin,
 		},
 		{
 			name:           "db in context but wrong type",
@@ -290,9 +291,9 @@ func TestLoginPost(t *testing.T) {
 			var req *http.Request
 
 			if tc.name == "ValidateForm error" {
-				req, _ = http.NewRequest("POST", "/login", strings.NewReader("%%%"))
+				req, _ = http.NewRequest("POST", paths.PathLogin, strings.NewReader("%%%"))
 			} else {
-				req, _ = http.NewRequest("POST", "/login", strings.NewReader(tc.form.Encode()))
+				req, _ = http.NewRequest("POST", paths.PathLogin, strings.NewReader(tc.form.Encode()))
 			}
 
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -306,7 +307,7 @@ func TestLoginPost(t *testing.T) {
 				tc.setupMock(router, mock, &tc)
 			}
 
-			router.POST("/login", LoginPost)
+			router.POST(paths.PathLogin, LoginPost)
 
 			router.ServeHTTP(w, req)
 

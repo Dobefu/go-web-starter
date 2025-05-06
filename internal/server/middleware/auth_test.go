@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Dobefu/go-web-starter/internal/server/routes/paths"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -51,7 +52,7 @@ func TestAuthOnly(t *testing.T) {
 		expectedCode  int
 		expectedLoc   string
 	}{
-		{"redirects to login if not authenticated", false, http.StatusSeeOther, "/login"},
+		{"redirects to login if not authenticated", false, http.StatusSeeOther, paths.PathLogin},
 		{"allows access if authenticated", true, http.StatusOK, ""},
 	}
 
@@ -93,12 +94,12 @@ func TestAnonOnly(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router := setupRouterWithSession(AnonOnly(), "/login", func(c *gin.Context) {
+			router := setupRouterWithSession(AnonOnly(), paths.PathLogin, func(c *gin.Context) {
 				c.Status(http.StatusOK)
 			})
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("GET", "/login", nil)
+			req, _ := http.NewRequest("GET", paths.PathLogin, nil)
 
 			if tt.authenticated {
 				for _, cookie := range getAuthCookies() {
