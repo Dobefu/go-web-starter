@@ -5,10 +5,13 @@
   <div class="flex flex-wrap gap-4">
     {{- range $tab := .Tabs -}}
       <a
-        class="rounded-full border border-transparent px-4 py-2 data-current:border-zinc-200 data-current:bg-white data-current:shadow"
+        class="flex items-center gap-2 rounded-full px-4 py-2 data-current:bg-white data-current:shadow"
         href="{{ $tab.Href }}"
         {{- if eq $tab.Href $href -}}data-current{{- end -}}
       >
+        {{- if $tab.Icon -}}
+          {{- template "components/atoms/icon" dict "Icon" $tab.Icon "Classes" "size-5" -}}
+        {{- end -}}
         {{- $tab.Text -}}
       </a>
     {{ end }}
