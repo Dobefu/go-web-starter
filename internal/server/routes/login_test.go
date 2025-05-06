@@ -224,7 +224,7 @@ func TestLoginPost(t *testing.T) {
 			setDBInContext: true,
 			foundUser:      &mockUser{User: *user.NewUser("", "", "", true)},
 			expectStatus:   http.StatusSeeOther,
-			expectLocation: "/",
+			expectLocation: paths.PathAccount,
 			setupMock: func(router *gin.Engine, mock sqlmock.Sqlmock, tc *testCase) {
 				userVal := reflect.ValueOf(&tc.foundUser.User).Elem()
 				idField := userVal.FieldByName("id")
