@@ -7,7 +7,7 @@
     "build:css:main": "tailwindcss -i ./internal/static/static/css/src/main.css -o ./internal/static/static/css/dist/main.css -m",
     "build:css:email": "tailwindcss -i ./internal/static/static/css/src/email.css -o ./internal/static/static/css/dist/email.css -m",
     "build:css": "bun run build:css:main && bun run build:css:email",
-    "build:js": "bun build ./internal/static/static/js/src/main.ts --outdir ./internal/static/static/js/dist --minify --banner '\"use strict\";'",
+    "build:js": "bun build ./internal/static/static/js/src/main.ts --outdir ./internal/static/static/js/dist --format=iife --production --banner '\"use strict\";'",
     "build": "bun run build:css && bun run build:js",
     "lint": "eslint . && prettier . --check",
     "lint:fix": "eslint . && prettier . --write"
