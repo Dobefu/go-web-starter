@@ -1,4 +1,4 @@
-{{- define "pages/account_edit" -}}
+{{- define "pages/account_delete" -}}
   {{- template "layouts/default/head" . -}}
 
   {{- template "components/atoms/heading" dict "Level" 1 "Text" .Title -}}
@@ -20,37 +20,30 @@
     <input type="hidden" name="_csrf" value="{{ .CSRFToken }}" />
 
     <div class="flex flex-col gap-2">
-      <label class="required" for="username">Username</label>
+      <label class="required" for="password">Password</label>
       <input
         autofocus
-        id="username"
-        name="username"
+        id="password"
+        name="password"
         required
         type="text"
-        value="{{ .FormData.Values.username }}"
+        value="{{ .FormData.Values.password }}"
       />
 
-      {{- if .FormData.Errors.username -}}
+      {{- if .FormData.Errors.password -}}
         <div class="text-sm text-red-500">
-          {{ index .FormData.Errors.username 0 }}
+          {{ index .FormData.Errors.password 0 }}
         </div>
       {{- end -}}
     </div>
 
-    <div class="flex items-center justify-between gap-4 max-sm:flex-col">
-      <button class="btn flex items-center gap-2 max-sm:w-full" type="submit">
-        {{- template "components/atoms/icon" dict "Icon" "content-save" "Classes" "size-5" -}}
-        Save
-      </button>
-
-      <a
-        class="btn btn--danger flex items-center gap-2 max-sm:w-full"
-        href="/account/delete"
-      >
-        {{- template "components/atoms/icon" dict "Icon" "trash" "Classes" "size-5" -}}
-        Delete Account
-      </a>
-    </div>
+    <button
+      class="btn btn--danger me-auto flex items-center gap-2 max-sm:w-full"
+      type="submit"
+    >
+      {{- template "components/atoms/icon" dict "Icon" "trash" "Classes" "size-5" -}}
+      Delete Account
+    </button>
   </form>
 
   {{- template "layouts/default/foot" . -}}

@@ -37,4 +37,5 @@ func RegisterAuthOnlyRoutes(rg *gin.RouterGroup) {
 	rg.GET(paths.PathAccount, Account)
 	rg.GET(fmt.Sprintf("%s/edit", paths.PathAccount), AccountEdit)
 	rg.POST(fmt.Sprintf("%s/edit", paths.PathAccount), AccountEditPost)
+	rg.GET(fmt.Sprintf("%s/delete", paths.PathAccount), AccountDelete)
 }

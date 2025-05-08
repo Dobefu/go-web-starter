@@ -1,3 +1,7 @@
 .btn {
   @apply cursor-pointer justify-center rounded-md bg-sky-600 px-4 py-2 font-medium text-white outline-offset-2 outline-sky-600 transition-colors hover:bg-sky-700 active:bg-sky-800;
 }
+
+.btn--danger {
+  @apply bg-red-600 outline-red-600 transition-colors hover:bg-red-700 active:bg-red-800;
+}
