@@ -3,18 +3,22 @@ const beforeUnloadHandler = (e: Event): void => {
 }
 
 const formElements = document.querySelectorAll<HTMLInputElement>(
-  'input,textarea,[contenteditable]',
+  ':is(input:not([type=search],[type=hidden]),textarea,[contenteditable]):not(data-ignore-dirty)',
 )
 
 formElements.forEach((formElement) => {
-  const initialFormValue = formElement.value
+  const isCheckable =
+    formElement.type === 'checkbox' || formElement.type === 'radio'
+  const initialFormValue = isCheckable ? formElement.checked : formElement.value
 
   formElement.addEventListener('input', (e: Event) => {
-    if (
-      e.target &&
-      'value' in e.target &&
-      e.target.value !== initialFormValue
-    ) {
+    if (!(e.target instanceof HTMLInputElement)) {
+      return
+    }
+
+    const val = isCheckable ? e.target.checked : e.target.value
+
+    if (val !== initialFormValue) {
       addEventListener('beforeunload', beforeUnloadHandler)
       return
     }
