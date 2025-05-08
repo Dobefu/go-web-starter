@@ -1,3 +1,5 @@
+const abortController = new AbortController()
+
 const beforeUnloadHandler = (e: Event): void => {
   e.preventDefault()
 }
@@ -19,10 +21,19 @@ formElements.forEach((formElement) => {
     const val = isCheckable ? e.target.checked : e.target.value
 
     if (val !== initialFormValue) {
-      addEventListener('beforeunload', beforeUnloadHandler)
+      addEventListener('beforeunload', beforeUnloadHandler, {
+        signal: abortController.signal,
+      })
+
       return
     }
 
     removeEventListener('beforeunload', beforeUnloadHandler)
+  })
+})
+
+document.querySelectorAll<HTMLFormElement>('form').forEach((form) => {
+  form.addEventListener('submit', () => {
+    abortController.abort()
   })
 })
