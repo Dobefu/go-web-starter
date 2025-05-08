@@ -74,7 +74,7 @@ func AccountEditPost(c *gin.Context) {
 
 	_, err = findByUsername(db, username)
 
-	if err == nil {
+	if err == nil && usr.GetUsername() != username {
 		v.AddFieldError("username", "This username is already taken")
 	}
 

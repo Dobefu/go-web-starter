@@ -167,7 +167,10 @@ func FindByEmail(db database.DatabaseInterface, email string) (*User, error) {
 	return user, nil
 }
 
-func FindByUsername(db database.DatabaseInterface, username string) (*User, error) {
+func FindByUsername(
+	db database.DatabaseInterface,
+	username string,
+) (*User, error) {
 	user := &User{}
 	row := db.QueryRow(findUserByUsernameQuery, username)
 
