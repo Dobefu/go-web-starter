@@ -28,7 +28,7 @@ func AnonOnly() gin.HandlerFunc {
 		session := sessions.Default(c)
 
 		if session.Get("userID") != nil {
-			c.Redirect(http.StatusSeeOther, "/")
+			c.Redirect(http.StatusSeeOther, paths.PathAccount)
 			c.Abort()
 
 			return

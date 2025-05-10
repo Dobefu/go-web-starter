@@ -88,7 +88,7 @@ func TestAnonOnly(t *testing.T) {
 		expectedCode  int
 		expectedLoc   string
 	}{
-		{"redirects to home if authenticated", true, http.StatusSeeOther, "/"},
+		{"redirects to home if authenticated", true, http.StatusSeeOther, paths.PathAccount},
 		{"allows access if not authenticated", false, http.StatusOK, ""},
 	}
 
