@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-contrib/sessions v1.0.3
-	github.com/gin-gonic/gin v1.10.0
+	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/assert/v2 v2.2.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/lib/pq v1.10.9
