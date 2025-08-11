@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tdewolff/minify/v2 v2.23.10
 	golang.org/x/crypto v0.41.0
-	golang.org/x/net v0.42.0
+	golang.org/x/net v0.43.0
 	golang.org/x/term v0.34.0
 )
 
