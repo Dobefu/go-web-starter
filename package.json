@@ -27,7 +27,7 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.0.0",
-    "prettier": "^3.8.0",
+    "prettier": "^3.8.1",
     "prettier-plugin-go-template": "^0.0.15",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.1.18",
